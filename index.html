@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>HoHoHo Bet</title>
+  <title>HoHoHo Bet Casino</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -18,32 +18,64 @@
 </header>
 
 <div class="container">
+
   <aside class="side-menu">
     <ul>
       <li>Profile</li>
-      <li>Deposit</li>
-      <li>Withdraw</li>
+      <li><a href="deposit.html">Deposit</a></li>
+      <li><a href="withdraw.html">Withdraw</a></li>
       <li>History</li>
     </ul>
   </aside>
 
   <main class="games-area">
     <div class="games-grid">
-      <!-- 20 placeholders -->
-      <div class="game">Game 1</div><div class="game">Game 2</div>
-      <div class="game">Game 3</div><div class="game">Game 4</div>
-      <div class="game">Game 5</div><div class="game">Game 6</div>
-      <div class="game">Game 7</div><div class="game">Game 8</div>
-      <div class="game">Game 9</div><div class="game">Game 10</div>
-      <div class="game">Game 11</div><div class="game">Game 12</div>
-      <div class="game">Game 13</div><div class="game">Game 14</div>
-      <div class="game">Game 15</div><div class="game">Game 16</div>
-      <div class="game">Game 17</div><div class="game">Game 18</div>
-      <div class="game">Game 19</div><div class="game">Game 20</div>
+
+      <a href="game1.html">
+        <div class="game game-slot">Jungle Spin</div>
+      </a>
+
+      <a href="game2.html">
+        <div class="game game-match">Animal Match</div>
+      </a>
+
+      <a href="keno.html">
+        <div class="game game-keno">FAST KENO</div>
+      </a>
+
+      <!-- placeholders -->
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+      <div class="game">Coming Soon</div>
+
     </div>
   </main>
+
 </div>
 
 <script src="script.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  if(localStorage.getItem("loggedIn")==="true"){
+    loginBtn.classList.add("hidden");
+    registerBtn.classList.add("hidden");
+    depositBtn.classList.remove("hidden");
+  }
+});
+</script>
+
 </body>
 </html>
