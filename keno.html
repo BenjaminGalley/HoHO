@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Fast Keno | HoHoHo Bet</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+body{
+  background:#7a0000;
+  color:#fff;
+  font-family:Segoe UI;
+  text-align:center;
+}
+#timer{font-size:24px;margin:10px}
+#kenoBoard{
+  display:grid;
+  grid-template-columns:repeat(10,1fr);
+  gap:6px;
+  max-width:500px;
+  margin:20px auto;
+}
+.num{
+  background:#111;
+  padding:12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.num.selected{background:#ffcc33;color:#000}
+.num.drawn{background:#00c853;color:#000}
+
+#controls{margin:15px}
+#tickets{
+  max-height:150px;
+  overflow-y:auto;
+  background:#111;
+  margin:10px;
+  padding:10px;
+}
+.ticket{border-bottom:1px solid #333;padding:5px}
+</style>
+</head>
+
+<body>
+
+<h2>FAST KENO</h2>
+<div id="timer">Next draw in: 60</div>
+
+<div id="kenoBoard"></div>
+
+<div id="controls">
+  Bet: <input type="number" id="bet" value="2" min="2">
+  <button onclick="placeBet()">BET</button>
+</div>
+
+<div id="tickets"></div>
+
+<h3 id="result"></h3>
+
+<script>
+let board=document.getElementById("kenoBoard");
+let selected=[];
+let tickets=[];
+let drawTime=60;
+let balance=Number(localStorage.getItem("mainBalance"))||500;
+
+for(let i=1;i<=80;i++){
+  let d=document.createElement("div");
+  d.className="num";
+  d.textContent=i;
+  d.onclick=()=>toggle(i,d);
+  board.appendChild(d);
+}
+
+function toggle(n,el){
+  if(el.classList.contains("selected")){
+    el.classList.remove("selected");
+    selected=selected.filter(x=>x!==n);
+  }else if(selected.length<10){
+    el.classList.add("selected");
+    selected.push(n);
+  }
+}
+
+function placeBet(){
+  if(selected.length===0) return;
+  let ticket={nums:[...selected]};
+  tickets.push(ticket);
+  let t=document.createElement("div");
+  t.className="ticket";
+  t.textContent="Ticket "+tickets.length+": "+ticket.nums.join(",");
+  document.getElementById("tickets").appendChild(t);
+  document.querySelectorAll(".selected").forEach(n=>n.classList.remove("selected"));
+  selected=[];
+}
+
+setInterval(()=>{
+  drawTime--;
+  document.getElementById("timer").textContent="Next draw in: "+drawTime;
+  if(drawTime<=0){ draw(); drawTime=60; }
+},1000);
+
+function draw(){
+  document.getElementById("result").textContent="";
+  let drawn=[];
+  while(drawn.length<20){
+    let n=Math.floor(Math.random()*80)+1;
+    if(!drawn.includes(n)) drawn.push(n);
+  }
+  document.querySelectorAll(".num").forEach(n=>n.classList.remove("drawn"));
+  drawn.forEach(n=>{
+    board.children[n-1].classList.add("drawn");
+  });
+
+  let win=0;
+  tickets.forEach(t=>{
+    let hits=t.nums.filter(n=>drawn.includes(n)).length;
+    if(hits>=3) win+=hits*5;
+  });
+
+  if(win>0){
+    document.getElementById("result").textContent="YOU WIN "+win+" BIRR";
+    balance+=win;
+  }else{
+    document.getElementById("result").textContent="Try again";
+  }
+  localStorage.setItem("mainBalance",balance);
+  tickets=[];
+  document.getElementById("tickets").innerHTML="";
+}
+</script>
+
+</body>
+</html>
