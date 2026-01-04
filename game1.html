@@ -1,126 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Jungle Spin Slot | HoHoHo Bet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Jungle Game | HoHoHo Bet</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{margin:0;padding:0;font-family:sans-serif;background:#0b3d0b;color:#fff;overflow:hidden}
+.top-bar{display:flex;justify-content:space-between;padding:10px;background:#144214;border-bottom:3px solid #ffcc33}
+.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
+.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
+.game-container{position:relative;width:100%;height:80vh;overflow:hidden;padding:20px;background-image:url('assets/jungle.background.jpg');background-size:cover;background-position:center}
+.grid-container{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:10px;width:70%;float:left}
+.grid-item{width:100%;height:100px;background:#111;border-radius:10px;display:flex;justify-content:center;align-items:center;cursor:pointer;transition:0.3s}
+.grid-item.selected{border:3px solid #ffcc33}
+.bet-panel{float:left;width:25%;padding-left:20px}
+.bet-panel h3{margin-top:0}
+.bet-panel button{padding:10px 20px;margin:5px;font-size:18px;border:none;border-radius:5px;background:#ffcc33;color:#000;cursor:pointer;font-weight:bold;transition:0.2s}
+.bet-panel button:hover{transform:scale(1.05)}
+.ticket-board{clear:both;margin-top:20px;max-height:200px;overflow-y:auto}
+.ticket{background:#111;padding:10px;margin-bottom:10px;border-radius:10px}
+</style>
 </head>
 <body>
 
-<div class="game-container">
-  <img src="assets/jungle.background.jpg" class="game-bg">
-
-  <div class="game-header">
-    <img src="assets/lion.jpg" class="game-logo">
-    <div class="balance-display">Balance: <span id="balance">500</span> birr</div>
+<div class="top-bar">
+  <div class="logo">Jungle Game</div>
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
   </div>
-
-  <div class="slot-grid" id="slotGrid">
-    <!-- 4x4 animal grid populated by JS -->
-  </div>
-
-  <div class="game-controls">
-    <input type="number" id="betAmount" placeholder="Bet (min 2)" min="2" value="2">
-    <button id="spinBtn">SPIN</button>
-    <div id="spinMessage"></div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
+    <button onclick="logoutUser()">Logout</button>
   </div>
 </div>
 
-<script src="script.js"></script>
+<div class="game-container">
+  <div class="grid-container" id="gameGrid"></div>
+  <div class="bet-panel">
+    <h3>Bet Panel</h3>
+    <div>Selected: <span id="selectedAnimals"></span></div>
+    <div>Bet: <span id="betAmount">2</span> Birr</div>
+    <button onclick="changeBet(-1)">−</button>
+    <button onclick="changeBet(1)">+</button>
+    <button onclick="placeBet()">Place Bet</button>
+  </div>
+</div>
+
+<div class="ticket-board" id="ticketBoard"></div>
+
+<audio id="clickSound" src="assets/click.mp3"></audio>
+<audio id="winSound" src="assets/pop.mp3"></audio>
+
 <script>
-/* --- Game 1 Jungle Spin Slot --- */
-const slotGrid = document.getElementById("slotGrid");
-const balanceDisplay = document.getElementById("balance");
-const spinBtn = document.getElementById("spinBtn");
-const betInput = document.getElementById("betAmount");
-const spinMessage = document.getElementById("spinMessage");
+if(!user) location.href="login.html";
+const clickSound=document.getElementById("clickSound");
+const winSound=document.getElementById("winSound");
 
-const animals = ["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
-let balance = Number(localStorage.getItem("mainBalance")) || 500;
+const animals=["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
+const grid=document.getElementById("gameGrid");
+let selected=[];
+let bet=2;
+let tickets=[];
+let balance=Number(localStorage.getItem("balance")||0);
 
-balanceDisplay.textContent = balance;
+/* Top bar update */
+function updateTopBar(){
+  document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
+  document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
+}
+updateTopBar();
 
-function generateGrid() {
-  slotGrid.innerHTML = "";
-  for(let i=0;i<16;i++){
-    const cell = document.createElement("div");
-    cell.className = "slot-cell";
-    const img = document.createElement("img");
-    img.src = "assets/"+animals[Math.floor(Math.random()*animals.length)];
-    cell.appendChild(img);
-    slotGrid.appendChild(cell);
-  }
+/* Build grid 4x4 */
+for(let i=0;i<16;i++){
+  const div=document.createElement("div");
+  div.className="grid-item";
+  const img=document.createElement("img");
+  img.src="assets/"+animals[i%animals.length];
+  img.style.width="80px";
+  img.style.height="80px";
+  div.appendChild(img);
+  div.onclick=()=>{toggleSelect(div,i);clickSound.play();}
+  grid.appendChild(div);
 }
 
-function spinSlots() {
-  let bet = Number(betInput.value);
-  if(bet<2){alert("Min bet 2 birr"); return;}
-  if(bet>balance){alert("Insufficient balance"); return;}
-  balance -= bet;
-  updateBalance();
-
-  spinMessage.textContent = "Spinning...";
-  let spinCount = 0;
-  const spinInterval = setInterval(()=>{
-    generateGrid();
-    spinCount++;
-    if(spinCount>20){
-      clearInterval(spinInterval);
-      checkWin(bet);
-    }
-  },100);
-}
-
-function checkWin(bet){
-  // Simple winning logic: 3+ same animals in any row
-  const cells = Array.from(slotGrid.children);
-  const rows = [0,4,8,12].map(i=>cells.slice(i,i+4));
-  let win = 0;
-  rows.forEach(row=>{
-    const counts = {};
-    row.forEach(cell=>{
-      const src = cell.firstChild.src;
-      counts[src] = (counts[src]||0)+1;
-    });
-    Object.values(counts).forEach(c=>{
-      if(c>=3){ win += bet*c; }
-    });
-  });
-  if(win>0){
-    spinMessage.textContent = "You win "+win+" birr!";
-    balance += win;
-    updateBalance();
-    const winAudio = new Audio('assets/win.mp3'); winAudio.play();
+function toggleSelect(el,index){
+  if(selected.includes(index)){
+    selected=selected.filter(x=>x!==index);
+    el.classList.remove("selected");
   }else{
-    spinMessage.textContent = "Try again!";
+    if(selected.length>=5) return; // max 5 selections
+    selected.push(index);
+    el.classList.add("selected");
   }
+  document.getElementById("selectedAnimals").innerText=selected.map(i=>animals[i]).join(", ");
 }
 
-function updateBalance(){
-  balanceDisplay.textContent = balance;
-  localStorage.setItem("mainBalance",balance);
+function changeBet(v){
+  bet=Math.max(2,bet+v);
+  document.getElementById("betAmount").innerText=bet;
+  clickSound.play();
 }
 
-spinBtn.addEventListener("click",spinSlots);
+function placeBet(){
+  if(selected.length===0)return alert("Select animals");
+  if(balance<bet)return alert("Low balance");
 
-generateGrid();
+  balance-=bet;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+
+  tickets.push({id:Date.now(),nums:[...selected],bet,win:0});
+  renderTickets();
+  selected=[];
+  document.querySelectorAll(".grid-item").forEach(g=>g.classList.remove("selected"));
+  document.getElementById("selectedAnimals").innerText="";
+}
+
+/* Render tickets */
+function renderTickets(){
+  const t=document.getElementById("ticketBoard");
+  t.innerHTML="";
+  tickets.forEach(tc=>{
+    const div=document.createElement("div");
+    div.className="ticket";
+    div.innerHTML=`#${tc.id}<br>${tc.nums.map(i=>animals[i]).join(", ")}<br>Bet: ${tc.bet}<br>Win: ${tc.win}`;
+    t.appendChild(div);
+  });
+}
+
+/* LOGOUT */
+function logoutUser(){
+  localStorage.removeItem("user");
+  location.href="login.html";
+}
 </script>
-
-<style>
-.game-container{position:relative;width:100%;height:100vh;overflow:hidden;text-align:center;}
-.game-bg{position:absolute;width:100%;height:100%;object-fit:cover;z-index:-1;}
-.game-header{display:flex;justify-content:space-between;align-items:center;padding:15px;color:#fff;}
-.game-logo{height:60px;border-radius:50%;border:2px solid #fff;}
-.balance-display{font-size:20px;}
-.slot-grid{display:grid;grid-template-columns:repeat(4,80px);grid-gap:10px;justify-content:center;margin:50px auto;}
-.slot-cell{width:80px;height:80px;overflow:hidden;border-radius:12px;border:2px solid #fff;background:rgba(255,255,255,0.1);}
-.slot-cell img{width:100%;height:100%;object-fit:cover;}
-.game-controls{margin-top:20px;}
-#betAmount{padding:10px;width:100px;border-radius:10px;border:none;}
-#spinBtn{padding:10px 20px;border:none;border-radius:15px;background:linear-gradient(90deg,#ff0080,#7928ca);color:#fff;font-weight:bold;margin-left:10px;}
-#spinMessage{margin-top:10px;font-size:16px;color:#ffcc33;}
-</style>
 
 </body>
 </html>
