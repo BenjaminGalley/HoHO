@@ -4,18 +4,20 @@
 <meta charset="UTF-8">
 <title>Admin Panel | HoHoHo Bet</title>
 <link rel="stylesheet" href="style.css">
-<script src="script.js" defer></script>
 <style>
-body{background:#0b0e1a;color:#fff}
+body{background:#0b0e1a;color:#fff;font-family:sans-serif}
 .admin-wrap{padding:20px}
 .section{margin-bottom:40px}
-.card{background:#111;padding:15px;border-radius:10px;margin-bottom:10px}
-.card button{margin-right:10px;padding:6px 12px}
+.card{background:#111;padding:15px;border-radius:10px;margin-bottom:10px;transition:0.2s}
+.card:hover{background:#222}
+.card button{margin-right:10px;padding:6px 12px;border:none;border-radius:5px;cursor:pointer}
 .approve{background:#00c853;color:#000}
 .reject{background:#d50000;color:#fff}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33;color:#fff}
+.top-bar .logo{font-weight:bold;font-size:20px}
+.top-bar a{color:#ffcc33;text-decoration:none;font-weight:bold;margin-left:15px}
 </style>
 </head>
-
 <body>
 
 <div class="top-bar">
@@ -30,63 +32,105 @@ body{background:#0b0e1a;color:#fff}
   <!-- DEPOSITS -->
   <div class="section">
     <h2>Deposits</h2>
-    <div id="depositList"></div>
+    <div id="depositList">Loading...</div>
   </div>
 
   <!-- WITHDRAWALS -->
   <div class="section">
     <h2>Withdrawals</h2>
-    <div id="withdrawList"></div>
+    <div id="withdrawList">Loading...</div>
   </div>
 
 </div>
 
 <script>
-/* SIMPLE ADMIN ACCESS (TEMP) */
-const ADMIN_PHONE = "0000";
-if(!user || user.phone !== ADMIN_PHONE){
-  alert("Admin only");
-  location.href="index.html";
+const ADMIN_PHONE = "0000"; // Replace with real admin phone
+const ADMIN_PASS = "admin123"; // Simple password
+
+let adminUser = JSON.parse(localStorage.getItem("adminUser") || "null");
+if(!adminUser){
+  let phone = prompt("Admin Phone:");
+  let pass = prompt("Admin Password:");
+  if(phone !== ADMIN_PHONE || pass !== ADMIN_PASS){
+    alert("Access Denied"); location.href="index.html";
+  } else { adminUser={phone}; localStorage.setItem("adminUser",JSON.stringify(adminUser)); }
 }
 
-/* RENDER DEPOSITS */
-const depList=document.getElementById("depositList");
-deposits.forEach(d=>{
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`
-    <b>${d.playerId}</b><br>
-    ${d.name} (${d.phone})<br>
-    ${d.method}<br>
-    ${d.senderName} - ${d.senderPhone}<br>
-    Amount: ${d.amount}<br>
-    Status: ${d.status}<br>
-    ${d.status==="PENDING" ? `
-      <button class="approve" onclick="adminApproveDeposit(${d.id});location.reload()">Approve</button>
-      <button class="reject" onclick="adminRejectDeposit(${d.id});location.reload()">Reject</button>
-    ` : ""}
-  `;
-  depList.appendChild(c);
-});
+const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
 
-/* RENDER WITHDRAWALS */
-const withList=document.getElementById("withdrawList");
-withdrawals.forEach(w=>{
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`
-    <b>${w.playerId}</b><br>
-    ${w.method}<br>
-    ${w.receiverName} - ${w.receiverPhone}<br>
-    Amount: ${w.amount}<br>
-    Status: ${w.status}<br>
-    ${w.status==="PENDING" ? `
-      <button class="approve" onclick="adminApproveWithdrawal(${w.id});location.reload()">Approve</button>
-      <button class="reject" onclick="adminRejectWithdrawal(${w.id});location.reload()">Reject</button>
-    ` : ""}
-  `;
-  withList.appendChild(c);
-});
+let deposits=[], withdrawals=[];
+
+async function fetchAdminData(){
+  try{
+    const res=await fetch(googleScriptURL+"?action=getAdminData");
+    const data=await res.json();
+    deposits=data.deposits;
+    withdrawals=data.withdrawals;
+    renderDeposits();
+    renderWithdrawals();
+  }catch(e){console.error(e);document.getElementById("depositList").innerText="Error";document.getElementById("withdrawList").innerText="Error";}
+}
+
+function renderDeposits(){
+  const depList=document.getElementById("depositList");
+  depList.innerHTML="";
+  deposits.forEach(d=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <b>${d.playerId}</b> - ${d.name} (${d.phone})<br>
+      ${d.method}<br>
+      From: ${d.senderName} - ${d.senderPhone}<br>
+      Amount: ${d.amount}<br>
+      Status: ${d.status}<br>
+      ${d.status==="PENDING" ? `
+        <button class="approve" onclick="approveDeposit('${d.id}')">Approve</button>
+        <button class="reject" onclick="rejectDeposit('${d.id}')">Reject</button>
+      ` : ""}
+    `;
+    depList.appendChild(c);
+  });
+}
+
+function renderWithdrawals(){
+  const withList=document.getElementById("withdrawList");
+  withList.innerHTML="";
+  withdrawals.forEach(w=>{
+    const c=document.createElement("div");
+    c.className="card";
+    c.innerHTML=`
+      <b>${w.playerId}</b><br>
+      ${w.method}<br>
+      To: ${w.receiverName} - ${w.receiverPhone}<br>
+      Amount: ${w.amount}<br>
+      Status: ${w.status}<br>
+      ${w.status==="PENDING" ? `
+        <button class="approve" onclick="approveWithdrawal('${w.id}')">Approve</button>
+        <button class="reject" onclick="rejectWithdrawal('${w.id}')">Reject</button>
+      ` : ""}
+    `;
+    withList.appendChild(c);
+  });
+}
+
+function sendAdminAction(action,id){
+  fetch(googleScriptURL,{
+    method:"POST",
+    body:JSON.stringify({action,id}),
+    headers:{"Content-Type":"application/json"}
+  }).then(r=>r.json()).then(res=>{
+    console.log(res);
+    fetchAdminData(); // Refresh lists
+  }).catch(console.error);
+}
+
+function approveDeposit(id){sendAdminAction("approveDeposit",id);}
+function rejectDeposit(id){sendAdminAction("rejectDeposit",id);}
+function approveWithdrawal(id){sendAdminAction("approveWithdrawal",id);}
+function rejectWithdrawal(id){sendAdminAction("rejectWithdrawal",id);}
+
+// Initial fetch
+fetchAdminData();
 </script>
 
 </body>
