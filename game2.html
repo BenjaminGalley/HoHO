@@ -5,149 +5,47 @@
 <title>Animal Slot | HoHoHo Bet</title>
 <link rel="stylesheet" href="style.css">
 <style>
-body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;overflow:hidden}
-.top-bar{display:flex;justify-content:space-between;padding:10px;background:#223311;border-bottom:3px solid #ffcc33}
-.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
-.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
-
-.slot-container{display:flex;justify-content:center;align-items:center;height:60vh;margin-top:50px}
-.reel{width:100px;height:100px;margin:0 10px;overflow:hidden;border:3px solid #ffcc33;border-radius:10px;background:#111;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;transition:transform 0.5s ease}
-.reel img{width:80px;height:80px;margin:5px 0}
-.controls{text-align:center;margin-top:20px}
-.controls button{padding:10px 20px;margin:5px;font-size:18px;border:none;border-radius:5px;background:#ffcc33;color:#000;cursor:pointer;font-weight:bold;transition:0.2s}
-.controls button:hover{transform:scale(1.05)}
-.result{margin-top:20px;font-size:20px;font-weight:bold;text-align:center}
-.ticket-board{margin-top:20px;max-height:200px;overflow-y:auto;padding:0 20px}
-.ticket{background:#111;padding:10px;margin-bottom:10px;border-radius:10px}
+body{margin:0;padding:0;font-family:sans-serif;background:#1a0a1d;color:#fff;display:flex;flex-direction:column;align-items:center}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#331122;border-bottom:3px solid #ffcc33;color:#fff;width:100%}
+.logo-container img{height:50px;border-radius:10px}
+.slot-area{margin-top:20px;display:grid;grid-template-columns:repeat(5,140px);grid-gap:15px}
+.card{background:#442211;height:140px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;color:#ffd700;transition:0.3s;cursor:pointer;overflow:hidden}
+.card img{max-width:100%;max-height:100%;object-fit:cover;border-radius:10px;opacity:0.9}
+.balance-panel{margin:10px;font-weight:bold;font-size:18px}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="logo">Animal Slot</div>
-  <div class="top-info">
-    <span id="playerIdDisplay"></span>
-    <span id="balanceDisplay"></span>
+  <div class="logo-container">
+    <img src="assets/house_logo.png" alt="HoHoHo Logo">
+    <div>Animal Slot</div>
   </div>
-  <div class="top-actions">
-    <a href="index.html">Lobby</a>
-    <button onclick="logoutUser()">Logout</button>
-  </div>
+  <div class="balance-panel" id="balancePanel"></div>
 </div>
 
-<div class="slot-container">
-  <div class="reel" id="reel1"></div>
-  <div class="reel" id="reel2"></div>
-  <div class="reel" id="reel3"></div>
-</div>
-
-<div class="controls">
-  <button onclick="changeBet(-1)">−</button>
-  <strong>Bet: <span id="betAmount">2</span> Birr</strong>
-  <button onclick="changeBet(1)">+</button>
-  <button onclick="spin()">SPIN</button>
-</div>
-
-<div class="result" id="resultText"></div>
-<div class="ticket-board" id="ticketBoard"></div>
-
-<audio id="clickSound" src="assets/click.mp3"></audio>
-<audio id="spinSound" src="assets/pop.mp3"></audio>
+<div class="slot-area" id="slotArea"></div>
 
 <script>
-if(!user) location.href="login.html";
-
-/* Config */
-const clickSound=document.getElementById("clickSound");
-const spinSound=document.getElementById("spinSound");
-const animals=["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
-const reels=[document.getElementById("reel1"),document.getElementById("reel2"),document.getElementById("reel3")];
-const ticketBoard=document.getElementById("ticketBoard");
-const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
-
-let bet=2;
+let user=JSON.parse(localStorage.getItem("user")||"null");
 let balance=Number(localStorage.getItem("balance")||0);
-let tickets=[];
+document.getElementById("balancePanel").innerText=user?`ID: ${user.id} | Balance: ${balance} Birr`:"Not logged in";
 
-/* Top bar */
-function updateTopBar(){
-  document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
-  document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
-}
-updateTopBar();
+/* Slot animals */
+const animals=["lion.jpg","tiger.jpg","elephant.jpg","zebra.jpg","hippo.jpg","giraffe.jpg"];
+const slotArea=document.getElementById("slotArea");
 
-/* Bet adjustment */
-function changeBet(v){
-  bet=Math.max(2,bet+v);
-  document.getElementById("betAmount").innerText=bet;
-  clickSound.play();
-}
-
-/* Spin function */
-function spin(){
-  if(balance<bet)return alert("Low balance");
-  balance-=bet;
-  localStorage.setItem("balance",balance);
-  updateTopBar();
-  spinSound.play();
-
-  // Clear reels
-  reels.forEach(r=>r.innerHTML="");
-
-  // Random results
-  const results=[];
-  reels.forEach((r,i)=>{
-    const chosen=animals[Math.floor(Math.random()*animals.length)];
-    results.push(chosen);
-    const img=document.createElement("img");
-    img.src="assets/"+chosen;
-    r.appendChild(img);
-  });
-
-  // Ticket
-  const ticket={id:Date.now(),nums:results,bet,win:0};
-  // Calculate win
-  let win=0;
-  if(results[0]===results[1] && results[1]===results[2]){
-    win=ticket.bet*10;
-  } else if(results[0]===results[1] || results[1]===results[2] || results[0]===results[2]){
-    win=ticket.bet*3;
-  }
-  ticket.win=win;
-  tickets.push(ticket);
-
-  balance+=win;
-  localStorage.setItem("balance",balance);
-  updateTopBar();
-  renderTickets();
-
-  document.getElementById("resultText").innerText=win>0?`You win ${win} Birr!`:"Try again!";
-
-  // Update Google Script
-  fetch(googleScriptURL,{
-    method:"POST",
-    body:JSON.stringify({action:"updateBalance",playerId:user.id,balance}),
-    headers:{"Content-Type":"application/json"}
-  }).then(r=>r.json()).then(console.log).catch(console.error);
-}
-
-/* Render tickets */
-function renderTickets(){
-  ticketBoard.innerHTML="";
-  tickets.forEach(tc=>{
-    const div=document.createElement("div");
-    div.className="ticket";
-    div.innerHTML=`#${tc.id}<br>${tc.nums.join(" | ")}<br>Bet: ${tc.bet} Birr<br>Win: ${tc.win}`;
-    ticketBoard.appendChild(div);
-  });
-}
-
-/* Logout */
-function logoutUser(){
-  localStorage.removeItem("user");
-  location.href="login.html";
+for(let i=0;i<20;i++){
+  const div=document.createElement("div");
+  div.className="card";
+  const img=document.createElement("img");
+  img.src="assets/"+animals[i%animals.length];
+  div.appendChild(img);
+  const span=document.createElement("span");
+  span.innerText="Spin";
+  div.appendChild(span);
+  slotArea.appendChild(div);
 }
 </script>
-
 </body>
 </html>
