@@ -2,166 +2,90 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>HoHoHo Bet | Casino Lobby</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoHoHo Bet Casino</title>
 <link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
 <style>
-body{margin:0;padding:0;font-family:sans-serif;background:#ffeedd;color:#000;overflow-x:hidden}
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33;color:#fff}
-.logo-container{display:flex;align-items:center;gap:10px}
-.logo-container img{height:50px;border-radius:10px}
-.balance-panel{margin:10px;font-weight:bold;font-size:18px}
-.main-content{padding:20px;text-align:center}
-.game-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:15px;flex-wrap:wrap;margin-right:50px}
-.game-placeholder{background:#cc0000;border-radius:10px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffcc33;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s;position:relative;overflow:hidden}
-.game-placeholder img{max-width:100%;max-height:100%;border-radius:10px;object-fit:cover;opacity:0.9}
-.game-placeholder:hover{transform:scale(1.05);border:3px solid #ffd700}
-.side-menu{position:fixed;left:0;top:70px;width:180px;background:#111;height:100%;padding:10px;display:flex;flex-direction:column;gap:10px;z-index:10}
-.side-menu button{width:100%;padding:10px;font-weight:bold;border:none;border-radius:5px;background:#223311;color:#fff;cursor:pointer;transition:0.2s}
-.side-menu button:hover{background:#ffcc33;color:#000}
-#registrationForm,#loginForm{display:none;background:#111;padding:20px;border-radius:10px;max-width:300px;margin:auto;margin-top:20px}
-#registrationForm input,#loginForm input{width:100%;padding:10px;margin:5px 0;border-radius:5px;border:none}
-#registrationForm button,#loginForm button{width:100%;padding:10px;margin-top:10px;border-radius:5px;border:none;background:#223311;color:#fff;font-weight:bold;cursor:pointer;transition:0.2s}
-#registrationForm button:hover,#loginForm button:hover{background:#ffcc33;color:#000}
-.eye-toggle{position:absolute;right:15px;top:38px;cursor:pointer;color:#fff}
+body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
+.top-bar{display:flex; justify-content:space-between; align-items:center; background:#ff5252; color:#fff; padding:10px 20px;}
+.top-bar .logo{font-size:1.8em; font-weight:bold;}
+.top-bar .actions button{margin-left:10px; padding:6px 12px; font-size:1em;}
+#balancePanel{margin-top:10px; font-weight:bold; text-align:right;}
+.container{display:flex; flex-direction:column; align-items:center; padding:10px;}
+.games{display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-top:20px;}
+.card{width:150px; height:150px; background:#fff; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border:2px solid #d50000; transition:transform 0.2s;}
+.card:hover{transform:scale(1.05);}
+.card img{width:80px; height:80px; margin-bottom:10px; object-fit:cover;}
+.side-menu{position:fixed; top:0; left:0; width:200px; height:100%; background:#ffcc80; padding:20px; display:none; flex-direction:column; gap:10px;}
+.side-menu button{padding:8px 12px; font-size:1em; cursor:pointer;}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="logo-container">
-    <img src="assets/house_logo.png" alt="House Logo">
-    <div>HoHoHo Bet</div>
+  <div class="logo">HoHoHo Bet</div>
+  <div class="actions">
+    <button id="loginBtn" onclick="document.getElementById('loginModal').style.display='block'">Login</button>
+    <button id="registerBtn" onclick="document.getElementById('registerModal').style.display='block'">Register</button>
+    <button id="logoutBtn" onclick="logout()">Logout</button>
   </div>
-  <div class="balance-panel" id="balancePanel"></div>
-  <div class="top-actions">
-    <a href="#" id="loginBtn" onclick="showLogin()">Login</a>
-    <a href="#" id="registerBtn" onclick="showRegister()">Register</a>
-    <button onclick="logoutUser()" id="logoutBtn" style="display:none">Logout</button>
+</div>
+<div id="balancePanel"></div>
+
+<div class="side-menu" id="sideMenu">
+  <button id="profileBtn">Profile</button>
+  <button id="depositBtn">Deposit</button>
+  <button id="withdrawalBtn">Withdraw</button>
+</div>
+
+<div class="container">
+  <div class="games">
+    <div class="card">
+      <img src="assets/jungle.background.jpg" alt="Game 1 Logo">
+      <span>Game 1</span>
+    </div>
+    <div class="card">
+      <img src="assets/animal2.jpg" alt="Game 2 Logo">
+      <span>Game 2</span>
+    </div>
+    <div class="card">
+      <img src="assets/keno.logo.jpg" alt="Fast Keno Logo">
+      <span>Fast Keno</span>
+    </div>
   </div>
 </div>
 
-<div class="side-menu" id="sideMenu" style="display:none">
-  <button onclick="showProfile()">Profile</button>
-  <button onclick="showDeposit()">Deposit</button>
-  <button onclick="showWithdraw()">Withdraw</button>
-  <button onclick="showHistory()">History</button>
+<!-- LOGIN MODAL -->
+<div id="loginModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:1000;">
+  <h3>Login</h3>
+  <input type="text" id="loginPhone" placeholder="Phone"><br><br>
+  <input type="password" id="loginPassword" placeholder="Password">
+  <button onclick="togglePassword('loginPassword')">Show/Hide</button><br><br>
+  <button onclick="login(document.getElementById('loginPhone').value, document.getElementById('loginPassword').value); document.getElementById('loginModal').style.display='none'">Login</button>
+  <button onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
 </div>
 
-<div class="main-content">
-  <!-- Game placeholders -->
-  <div class="game-grid" id="gameGrid"></div>
-
-  <!-- Registration & Login Forms -->
-  <div id="registrationForm">
-    <h3>Register</h3>
-    <input type="text" id="regName" placeholder="Full Name">
-    <input type="text" id="regPhone" placeholder="Phone Number">
-    <div style="position:relative">
-      <input type="password" id="regPassword" placeholder="Password">
-      <span class="eye-toggle" onclick="toggleEye('regPassword')">👁️</span>
-    </div>
-    <button onclick="registerUser()">Register</button>
-  </div>
-
-  <div id="loginForm">
-    <h3>Login</h3>
-    <input type="text" id="loginPhone" placeholder="Phone Number">
-    <div style="position:relative">
-      <input type="password" id="loginPassword" placeholder="Password">
-      <span class="eye-toggle" onclick="toggleEye('loginPassword')">👁️</span>
-    </div>
-    <button onclick="loginUser()">Login</button>
-  </div>
+<!-- REGISTER MODAL -->
+<div id="registerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:1000;">
+  <h3>Register</h3>
+  <input type="text" id="regName" placeholder="Full Name"><br><br>
+  <input type="text" id="regPhone" placeholder="Phone"><br><br>
+  <input type="password" id="regPassword" placeholder="Password">
+  <button onclick="togglePassword('regPassword')">Show/Hide</button><br><br>
+  <button onclick="register(document.getElementById('regName').value, document.getElementById('regPhone').value, document.getElementById('regPassword').value); document.getElementById('registerModal').style.display='none'">Register</button>
+  <button onclick="document.getElementById('registerModal').style.display='none'">Cancel</button>
 </div>
 
 <script>
-let user=JSON.parse(localStorage.getItem("user")||"null");
-let balance=Number(localStorage.getItem("balance")||0);
-const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
-
-function updateTopBar(){
-  if(user){
-    document.getElementById("balancePanel").innerText="ID: "+user.id+" | Balance: "+balance+" Birr";
-    document.getElementById("loginBtn").style.display="none";
-    document.getElementById("registerBtn").style.display="none";
-    document.getElementById("logoutBtn").style.display="inline-block";
-    document.getElementById("sideMenu").style.display="flex";
-  } else {
-    document.getElementById("balancePanel").innerText="";
-    document.getElementById("loginBtn").style.display="inline-block";
-    document.getElementById("registerBtn").style.display="inline-block";
-    document.getElementById("logoutBtn").style.display="none";
-    document.getElementById("sideMenu").style.display="none";
-  }
+// SIDE MENU TOGGLE
+function toggleSideMenu(){
+  const menu=document.getElementById("sideMenu");
+  if(user) menu.style.display="flex";
+  else menu.style.display="none";
 }
-updateTopBar();
-
-function logoutUser(){
-  localStorage.removeItem("user");
-  user=null;
-  updateTopBar();
-}
-
-function showRegister(){document.getElementById("registrationForm").style.display="block";document.getElementById("loginForm").style.display="none";}
-function showLogin(){document.getElementById("loginForm").style.display="block";document.getElementById("registrationForm").style.display="none";}
-function toggleEye(id){const el=document.getElementById(id);el.type=el.type==="password"?"text":"password";}
-
-/* Registration & Login */
-function registerUser(){
-  const name=document.getElementById("regName").value;
-  const phone=document.getElementById("regPhone").value;
-  const pass=document.getElementById("regPassword").value;
-  if(!name||!phone||!pass)return alert("All fields required");
-  const newUser={id:"ID"+Date.now(),name,phone,password:pass};
-  localStorage.setItem("user",JSON.stringify(newUser));
-  localStorage.setItem("balance",0);
-  user=newUser;balance=0;
-  updateTopBar();
-  alert("Registered successfully! Your ID: "+newUser.id);
-  document.getElementById("registrationForm").style.display="none";
-}
-
-function loginUser(){
-  const phone=document.getElementById("loginPhone").value;
-  const pass=document.getElementById("loginPassword").value;
-  const storedUser=JSON.parse(localStorage.getItem("user"));
-  if(storedUser && storedUser.phone===phone && storedUser.password===pass){
-    user=storedUser;balance=Number(localStorage.getItem("balance")||0);
-    updateTopBar();
-    alert("Login successful!");
-    document.getElementById("loginForm").style.display="none";
-  } else alert("Phone or password incorrect");
-}
-
-/* Side menu actions */
-function showProfile(){alert("Profile page")}
-function showDeposit(){let amt=prompt("Enter deposit amount (min 100 Birr):");amt=Number(amt);if(isNaN(amt)||amt<100)return alert("Invalid amount");balance+=amt;localStorage.setItem("balance",balance);updateTopBar();sendGoogleScript({action:"deposit",playerId:user.id,amount:amt});}
-function showWithdraw(){let amt=prompt("Enter withdrawal amount (100-10000 Birr):");amt=Number(amt);if(isNaN(amt)||amt<100||amt>10000)return alert("Invalid amount");if(balance<amt)return alert("Insufficient balance");balance-=amt;localStorage.setItem("balance",balance);updateTopBar();sendGoogleScript({action:"withdraw",playerId:user.id,amount:amt});}
-function showHistory(){alert("History page")}
-
-function sendGoogleScript(data){
-  fetch(googleScriptURL,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).then(r=>r.json()).then(console.log).catch(console.error);
-}
-
-/* Game placeholders */
-const games=[
-  {name:"Jungle Game",file:"game1.html",img:"assets/jungle.background.jpg"},
-  {name:"Animal Slot",file:"game2.html",img:"assets/lion.jpg"},
-  {name:"Fast Keno",file:"keno.html",img:"assets/keno_logo.png"}
-];
-const gameGrid=document.getElementById("gameGrid");
-games.forEach(g=>{
-  const div=document.createElement("div");
-  div.className="game-placeholder";
-  div.onclick=()=>{if(g.file)location.href=g.file;};
-  const img=document.createElement("img");
-  img.src=g.img;
-  div.appendChild(img);
-  const span=document.createElement("span");
-  span.innerText=g.name;
-  div.appendChild(span);
-  gameGrid.appendChild(div);
-});
+document.addEventListener("DOMContentLoaded",toggleSideMenu);
 </script>
+
 </body>
 </html>
