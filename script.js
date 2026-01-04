@@ -6,6 +6,8 @@ let balance = Number(localStorage.getItem("balance")) || 0;
 let deposits = JSON.parse(localStorage.getItem("deposits")) || [];
 let withdrawals = JSON.parse(localStorage.getItem("withdrawals")) || [];
 
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
+
 /* ===============================
    UTIL
 ================================ */
@@ -66,7 +68,7 @@ function registerUser(e) {
     playerId: generatePlayerId()
   };
 
-  balance = 0; // NO AUTO MONEY
+  balance = 0;
   saveState();
   updateTopBar();
   alert("Registration successful");
@@ -102,9 +104,9 @@ function logoutUser() {
 }
 
 /* ===============================
-   DEPOSIT (PENDING)
+   DEPOSIT (GOOGLE SCRIPT)
 ================================ */
-function submitDeposit(e) {
+async function submitDeposit(e) {
   e.preventDefault();
   const method = document.getElementById("depMethod").value;
   const senderName = document.getElementById("depSenderName").value.trim();
@@ -116,26 +118,38 @@ function submitDeposit(e) {
     return;
   }
 
-  deposits.push({
-    id: Date.now(),
+  const payload = {
+    type: "deposit",
     playerId: user.playerId,
     name: user.name,
     phone: user.phone,
+    amount,
     method,
     senderName,
-    senderPhone,
-    amount,
-    status: "PENDING"
-  });
+    senderPhone
+  };
 
-  saveState();
-  alert("Deposit submitted for approval");
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      deposits.push({...payload, status:"PENDING"});
+      saveState();
+      alert("Deposit submitted for approval");
+    }
+  } catch(err){
+    alert("Deposit failed: " + err);
+  }
 }
 
 /* ===============================
-   WITHDRAWAL (INSTANT HOLD)
+   WITHDRAWAL (GOOGLE SCRIPT)
 ================================ */
-function submitWithdrawal(e) {
+async function submitWithdrawal(e) {
   e.preventDefault();
   const method = document.getElementById("withMethod").value;
   const receiverName = document.getElementById("withName").value.trim();
@@ -151,53 +165,39 @@ function submitWithdrawal(e) {
     return;
   }
 
-  balance -= amount; // HOLD AMOUNT
-  withdrawals.push({
-    id: Date.now(),
-    playerId: user.playerId,
-    method,
-    receiverName,
-    receiverPhone,
-    amount,
-    status: "PENDING"
-  });
-
+  balance -= amount; // hold instantly
   saveState();
   updateTopBar();
-  alert("Withdrawal request submitted");
-}
 
-/* ===============================
-   ADMIN ACTIONS (TEMP)
-================================ */
-function adminApproveDeposit(id) {
-  const d = deposits.find(x => x.id === id);
-  if (!d || d.status !== "PENDING") return;
-  d.status = "APPROVED";
-  balance += d.amount;
-  saveState();
-}
+  const payload = {
+    type: "withdrawal",
+    playerId: user.playerId,
+    name: user.name,
+    phone: user.phone,
+    amount,
+    method,
+    receiverName,
+    receiverPhone
+  };
 
-function adminRejectDeposit(id) {
-  const d = deposits.find(x => x.id === id);
-  if (!d) return;
-  d.status = "REJECTED";
-  saveState();
-}
-
-function adminApproveWithdrawal(id) {
-  const w = withdrawals.find(x => x.id === id);
-  if (!w) return;
-  w.status = "APPROVED";
-  saveState();
-}
-
-function adminRejectWithdrawal(id) {
-  const w = withdrawals.find(x => x.id === id);
-  if (!w || w.status !== "PENDING") return;
-  w.status = "REJECTED";
-  balance += w.amount; // RETURN MONEY
-  saveState();
+  try {
+    const res = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: { "Content-Type": "application/json" }
+    });
+    const data = await res.json();
+    if(data.status==="success"){
+      withdrawals.push({...payload, status:"PENDING"});
+      saveState();
+      alert("Withdrawal request submitted");
+    }
+  } catch(err){
+    alert("Withdrawal failed: " + err);
+    balance += amount; // rollback
+    saveState();
+    updateTopBar();
+  }
 }
 
 /* ===============================
