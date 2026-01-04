@@ -4,36 +4,30 @@
 <meta charset="UTF-8">
 <title>Fast Keno | HoHoHo Bet</title>
 <link rel="stylesheet" href="style.css">
-<script src="script.js" defer></script>
 <style>
-body{background:#7b0000;color:#fff}
+body{background:#7b0000;color:#fff;font-family:sans-serif;overflow-x:hidden}
+.top-bar{display:flex;justify-content:space-between;padding:10px;background:#300;border-bottom:3px solid #ffcc33}
+.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
+.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
 .keno-wrap{display:flex;gap:20px;padding:20px}
-.keno-left{flex:2}
+.keno-left{flex:2;position:relative}
 .keno-right{flex:1;max-height:80vh;overflow-y:auto}
-.keno-grid{
-  display:grid;
-  grid-template-columns:repeat(10,1fr);
-  gap:6px;
-}
-.num{
-  background:#111;
-  border-radius:6px;
-  padding:10px 0;
-  text-align:center;
-  cursor:pointer;
-  font-weight:bold;
-}
-.num.selected{background:#ffcc33;color:#000}
-.num.drawn{background:#00c853;color:#000}
+.keno-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.num{background:#111;border-radius:6px;padding:12px 0;text-align:center;cursor:pointer;font-weight:bold;transition:0.3s}
+.num.selected{background:#ffcc33;color:#000;transform:scale(1.1)}
+.num.drawn{background:#00c853;color:#000;box-shadow:0 0 10px #00ff00}
 .controls{margin:15px 0;display:flex;align-items:center;gap:10px}
-.controls button{padding:6px 12px;font-size:16px}
-.ticket{background:#111;padding:10px;border-radius:10px;margin-bottom:10px}
-.draw-box{
-  font-size:40px;
-  text-align:center;
-  margin:10px 0;
-}
-.timer{font-size:18px;margin-bottom:10px}
+.controls button{padding:8px 14px;font-size:18px;cursor:pointer;background:#ffcc33;color:#000;border-radius:5px;font-weight:bold;transition:0.2s}
+.controls button:hover{transform:scale(1.05)}
+.ticket{background:#111;padding:10px;border-radius:10px;margin-bottom:10px;transition:0.3s}
+.draw-box{font-size:60px;text-align:center;margin:10px 0;animation:popIn 0.5s}
+.timer{font-size:20px;margin-bottom:10px;font-weight:bold}
+.side-draw{background:#222;padding:10px;border-radius:10px;margin-bottom:10px;height:150px;overflow-y:auto}
+.side-draw span{display:inline-block;width:30px;height:30px;text-align:center;line-height:30px;margin:3px;background:#111;border-radius:5px}
+.side-draw span.drawn{background:#00c853;color:#000;box-shadow:0 0 5px #00ff00}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+.pop-number{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-size:80px;color:#ffcc33;font-weight:bold;animation:fadePop 1s forwards}
+@keyframes fadePop{0%{opacity:0;transform:translate(-50%,-50%) scale(0)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 </style>
 </head>
 
@@ -47,6 +41,7 @@ body{background:#7b0000;color:#fff}
   </div>
   <div class="top-actions">
     <a href="index.html">Lobby</a>
+    <button onclick="logoutUser()">Logout</button>
   </div>
 </div>
 
@@ -56,7 +51,6 @@ body{background:#7b0000;color:#fff}
   <div class="keno-left">
     <div class="timer">Next draw in: <span id="timer">60:00</span></div>
     <div class="draw-box" id="drawBox">●</div>
-
     <div class="keno-grid" id="kenoGrid"></div>
 
     <div class="controls">
@@ -74,25 +68,43 @@ body{background:#7b0000;color:#fff}
   <div class="keno-right">
     <h3>Tickets</h3>
     <div id="tickets"></div>
+    <h3>Drawn Numbers</h3>
+    <div class="side-draw" id="drawnNumbersBoard"></div>
   </div>
 
 </div>
 
+<audio id="clickSound" src="assets/click.mp3"></audio>
+<audio id="popSound" src="assets/pop.mp3"></audio>
+
 <script>
 if(!user) location.href="login.html";
+
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
+
+const clickSound=document.getElementById("clickSound");
+const popSound=document.getElementById("popSound");
 
 const grid=document.getElementById("kenoGrid");
 let selected=[];
 let bet=2;
 let tickets=[];
 let drawNumbers=[];
+let balance=Number(localStorage.getItem("balance")||0);
 
-/* build grid */
+/* TOP BAR UPDATE */
+function updateTopBar(){
+  document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
+  document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
+}
+updateTopBar();
+
+/* BUILD GRID */
 for(let i=1;i<=80;i++){
   const d=document.createElement("div");
   d.className="num";
   d.innerText=i;
-  d.onclick=()=>toggleNum(i,d);
+  d.onclick=()=>{toggleNum(i,d);clickSound.play();}
   grid.appendChild(d);
 }
 
@@ -111,6 +123,7 @@ function toggleNum(n,el){
 function changeBet(v){
   bet=Math.max(2,bet+v);
   document.getElementById("bet").innerText=bet;
+  clickSound.play();
   updateCalc();
 }
 
@@ -124,8 +137,9 @@ function placeBet(){
   if(balance<bet)return alert("Low balance");
 
   balance-=bet;
-  saveState();
+  localStorage.setItem("balance",balance);
   updateTopBar();
+  clickSound.play();
 
   tickets.push({
     id:Date.now(),
@@ -159,52 +173,73 @@ function renderTickets(){
 function startDraw(){
   drawNumbers=[];
   document.querySelectorAll(".num").forEach(n=>n.classList.remove("drawn"));
-  let pool=[...Array(80)].map((_,i)=>i+1);
+  const drawnBoard=document.getElementById("drawnNumbersBoard");
+  drawnBoard.innerHTML="";
 
+  let pool=[...Array(80)].map((_,i)=>i+1);
   let i=0;
+
   const interval=setInterval(()=>{
     if(i>=20){
       clearInterval(interval);
-      settle();
+      // 5 seconds review period
+      setTimeout(settleAndRestart,5000);
       return;
     }
     const r=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
     drawNumbers.push(r);
-    document.getElementById("drawBox").innerText=r;
+
+    // center pop
+    const pop=document.createElement("div");
+    pop.className="pop-number";
+    pop.innerText=r;
+    document.body.appendChild(pop);
+    popSound.play();
+    setTimeout(()=>pop.remove(),1000);
+
+    // mark grid
     document.querySelectorAll(".num")[r-1].classList.add("drawn");
+
+    // mark side board
+    const span=document.createElement("span");
+    span.innerText=r;
+    span.classList.add("drawn");
+    drawnBoard.appendChild(span);
+
     i++;
-  },800);
+  },500); // faster pop
 }
 
-function settle(){
+function settleAndRestart(){
   let totalWin=0;
   tickets.forEach(t=>{
     const hits=t.nums.filter(n=>drawNumbers.includes(n)).length;
-    if(hits>=3){
+    if(hits>=2){ // min 2 hits
       t.win=hits*t.bet*2;
       totalWin+=t.win;
-    }
+    } else t.win=0;
   });
   balance+=totalWin;
-  saveState();
+  localStorage.setItem("balance",balance);
   updateTopBar();
   renderTickets();
   alert(totalWin>0?`You win ${totalWin} Birr`:"Try again");
+  // restart timer
+  time=60;
 }
 
-/* TIMER */
-let time=3600;
+let time=60;
 setInterval(()=>{
   time--;
-  let m=Math.floor(time/60);
-  let s=time%60;
-  document.getElementById("timer").innerText=
-    `${m}:${s.toString().padStart(2,"0")}`;
-  if(time<=0){
-    time=3600;
-    startDraw();
-  }
+  document.getElementById("timer").innerText=`${time}s`;
+  if(time<=0){time=60;startDraw();}
 },1000);
+
+/* LOGOUT */
+function logoutUser(){
+  localStorage.removeItem("user");
+  location.href="login.html";
+}
 </script>
 
 </body>
