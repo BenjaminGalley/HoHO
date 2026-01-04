@@ -1,115 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Animal Match Puzzle | HoHoHo Bet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Animal Slot | HoHoHo Bet</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;overflow:hidden}
+.top-bar{display:flex;justify-content:space-between;padding:10px;background:#223311;border-bottom:3px solid #ffcc33}
+.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
+.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
+
+.slot-container{display:flex;justify-content:center;align-items:center;height:60vh;margin-top:50px}
+.reel{width:100px;height:100px;margin:0 10px;overflow:hidden;border:3px solid #ffcc33;border-radius:10px;background:#111;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;transition:transform 0.5s ease}
+.reel img{width:80px;height:80px;margin:5px 0}
+.controls{text-align:center;margin-top:20px}
+.controls button{padding:10px 20px;margin:5px;font-size:18px;border:none;border-radius:5px;background:#ffcc33;color:#000;cursor:pointer;font-weight:bold;transition:0.2s}
+.controls button:hover{transform:scale(1.05)}
+.result{margin-top:20px;font-size:20px;font-weight:bold;text-align:center}
+.ticket-board{margin-top:20px;max-height:200px;overflow-y:auto;padding:0 20px}
+.ticket{background:#111;padding:10px;margin-bottom:10px;border-radius:10px}
+</style>
 </head>
 <body>
 
-<div class="game-container">
-  <img src="assets/jungle.background.jpg" class="game-bg">
-
-  <div class="game-header">
-    <img src="assets/elephant.jpg" class="game-logo">
-    <div class="balance-display">Balance: <span id="balance">500</span> birr</div>
+<div class="top-bar">
+  <div class="logo">Animal Slot</div>
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
   </div>
-
-  <div class="puzzle-grid" id="puzzleGrid">
-    <!-- 4x4 grid populated by JS -->
-  </div>
-
-  <div class="game-controls">
-    <input type="number" id="betAmount" placeholder="Bet per puzzle (min 2)" min="2" value="2">
-    <button id="playBtn">PLAY</button>
-    <div id="puzzleMessage"></div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
+    <button onclick="logoutUser()">Logout</button>
   </div>
 </div>
 
-<script src="script.js"></script>
+<div class="slot-container">
+  <div class="reel" id="reel1"></div>
+  <div class="reel" id="reel2"></div>
+  <div class="reel" id="reel3"></div>
+</div>
+
+<div class="controls">
+  <button onclick="changeBet(-1)">−</button>
+  <strong>Bet: <span id="betAmount">2</span> Birr</strong>
+  <button onclick="changeBet(1)">+</button>
+  <button onclick="spin()">SPIN</button>
+</div>
+
+<div class="result" id="resultText"></div>
+<div class="ticket-board" id="ticketBoard"></div>
+
+<audio id="clickSound" src="assets/click.mp3"></audio>
+<audio id="spinSound" src="assets/pop.mp3"></audio>
+
 <script>
-/* --- Game 2 Animal Match Puzzle --- */
-const puzzleGrid = document.getElementById("puzzleGrid");
-const balanceDisplay = document.getElementById("balance");
-const playBtn = document.getElementById("playBtn");
-const betInput = document.getElementById("betAmount");
-const puzzleMessage = document.getElementById("puzzleMessage");
+if(!user) location.href="login.html";
 
-const animals = ["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
-let balance = Number(localStorage.getItem("mainBalance")) || 500;
-balanceDisplay.textContent = balance;
+/* Config */
+const clickSound=document.getElementById("clickSound");
+const spinSound=document.getElementById("spinSound");
+const animals=["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
+const reels=[document.getElementById("reel1"),document.getElementById("reel2"),document.getElementById("reel3")];
+const ticketBoard=document.getElementById("ticketBoard");
+const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
 
-let gridArr = [];
+let bet=2;
+let balance=Number(localStorage.getItem("balance")||0);
+let tickets=[];
 
-function generatePuzzle(){
-  puzzleGrid.innerHTML = "";
-  gridArr = [];
-  for(let i=0;i<16;i++){
-    const animal = animals[Math.floor(Math.random()*animals.length)];
-    gridArr.push(animal);
-    const cell = document.createElement("div");
-    cell.className = "puzzle-cell";
-    const img = document.createElement("img");
-    img.src="assets/"+animal;
-    cell.appendChild(img);
-    puzzleGrid.appendChild(cell);
-  }
+/* Top bar */
+function updateTopBar(){
+  document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
+  document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
+}
+updateTopBar();
+
+/* Bet adjustment */
+function changeBet(v){
+  bet=Math.max(2,bet+v);
+  document.getElementById("betAmount").innerText=bet;
+  clickSound.play();
 }
 
-function playPuzzle(){
-  let bet = Number(betInput.value);
-  if(bet<2){alert("Min bet 2 birr"); return;}
-  if(bet>balance){alert("Insufficient balance"); return;}
-  balance -= bet;
-  updateBalance();
+/* Spin function */
+function spin(){
+  if(balance<bet)return alert("Low balance");
+  balance-=bet;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+  spinSound.play();
 
-  // Simple match logic: count any 3+ same animals in row
-  const rows = [0,4,8,12].map(i=>gridArr.slice(i,i+4));
-  let win=0;
-  rows.forEach(row=>{
-    const counts={};
-    row.forEach(animal=>counts[animal]=(counts[animal]||0)+1);
-    Object.values(counts).forEach(c=>{if(c>=3) win += bet*c;});
+  // Clear reels
+  reels.forEach(r=>r.innerHTML="");
+
+  // Random results
+  const results=[];
+  reels.forEach((r,i)=>{
+    const chosen=animals[Math.floor(Math.random()*animals.length)];
+    results.push(chosen);
+    const img=document.createElement("img");
+    img.src="assets/"+chosen;
+    r.appendChild(img);
   });
 
-  if(win>0){
-    puzzleMessage.textContent = "You win "+win+" birr!";
-    balance += win;
-    updateBalance();
-    const winAudio = new Audio('assets/win.mp3'); winAudio.play();
-  }else{
-    puzzleMessage.textContent = "Try again!";
+  // Ticket
+  const ticket={id:Date.now(),nums:results,bet,win:0};
+  // Calculate win
+  let win=0;
+  if(results[0]===results[1] && results[1]===results[2]){
+    win=ticket.bet*10;
+  } else if(results[0]===results[1] || results[1]===results[2] || results[0]===results[2]){
+    win=ticket.bet*3;
   }
+  ticket.win=win;
+  tickets.push(ticket);
 
-  // Refresh puzzle
-  generatePuzzle();
+  balance+=win;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+  renderTickets();
+
+  document.getElementById("resultText").innerText=win>0?`You win ${win} Birr!`:"Try again!";
+
+  // Update Google Script
+  fetch(googleScriptURL,{
+    method:"POST",
+    body:JSON.stringify({action:"updateBalance",playerId:user.id,balance}),
+    headers:{"Content-Type":"application/json"}
+  }).then(r=>r.json()).then(console.log).catch(console.error);
 }
 
-function updateBalance(){
-  balanceDisplay.textContent = balance;
-  localStorage.setItem("mainBalance",balance);
+/* Render tickets */
+function renderTickets(){
+  ticketBoard.innerHTML="";
+  tickets.forEach(tc=>{
+    const div=document.createElement("div");
+    div.className="ticket";
+    div.innerHTML=`#${tc.id}<br>${tc.nums.join(" | ")}<br>Bet: ${tc.bet} Birr<br>Win: ${tc.win}`;
+    ticketBoard.appendChild(div);
+  });
 }
 
-playBtn.addEventListener("click",playPuzzle);
-
-generatePuzzle();
+/* Logout */
+function logoutUser(){
+  localStorage.removeItem("user");
+  location.href="login.html";
+}
 </script>
-
-<style>
-.game-container{position:relative;width:100%;height:100vh;overflow:hidden;text-align:center;}
-.game-bg{position:absolute;width:100%;height:100%;object-fit:cover;z-index:-1;}
-.game-header{display:flex;justify-content:space-between;align-items:center;padding:15px;color:#fff;}
-.game-logo{height:60px;border-radius:50%;border:2px solid #fff;}
-.balance-display{font-size:20px;}
-.puzzle-grid{display:grid;grid-template-columns:repeat(4,80px);grid-gap:10px;justify-content:center;margin:50px auto;}
-.puzzle-cell{width:80px;height:80px;overflow:hidden;border-radius:12px;border:2px solid #fff;background:rgba(255,255,255,0.1);cursor:pointer;}
-.puzzle-cell img{width:100%;height:100%;object-fit:cover;}
-.game-controls{margin-top:20px;}
-#betAmount{padding:10px;width:140px;border-radius:10px;border:none;}
-#playBtn{padding:10px 20px;border:none;border-radius:15px;background:linear-gradient(90deg,#ff0080,#7928ca);color:#fff;font-weight:bold;margin-left:10px;}
-#puzzleMessage{margin-top:10px;font-size:16px;color:#ffcc33;}
-</style>
 
 </body>
 </html>
