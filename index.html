@@ -5,21 +5,19 @@
 <title>HoHoHo Bet | Casino Lobby</title>
 <link rel="stylesheet" href="style.css">
 <style>
-body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;overflow-x:hidden}
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33}
+body{margin:0;padding:0;font-family:sans-serif;background:#ffeedd;color:#000;overflow-x:hidden}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33;color:#fff}
 .logo-container{display:flex;align-items:center;gap:10px}
 .logo-container img{height:50px;border-radius:10px}
-.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
-.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
+.balance-panel{margin:10px;font-weight:bold;font-size:18px}
+.main-content{padding:20px;text-align:center}
+.game-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:15px;flex-wrap:wrap;margin-right:50px}
+.game-placeholder{background:#cc0000;border-radius:10px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffcc33;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s;position:relative;overflow:hidden}
+.game-placeholder img{max-width:100%;max-height:100%;border-radius:10px;object-fit:cover;opacity:0.9}
+.game-placeholder:hover{transform:scale(1.05);border:3px solid #ffd700}
 .side-menu{position:fixed;left:0;top:70px;width:180px;background:#111;height:100%;padding:10px;display:flex;flex-direction:column;gap:10px;z-index:10}
 .side-menu button{width:100%;padding:10px;font-weight:bold;border:none;border-radius:5px;background:#223311;color:#fff;cursor:pointer;transition:0.2s}
 .side-menu button:hover{background:#ffcc33;color:#000}
-.main-content{margin-left:200px;padding:20px}
-.game-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:15px;flex-wrap:wrap;margin-right:50px}
-.game-placeholder{background:#111;border-radius:10px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffcc33;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s;position:relative;overflow:hidden}
-.game-placeholder img{max-width:100%;max-height:100%;border-radius:10px;object-fit:cover;opacity:0.9}
-.game-placeholder:hover{transform:scale(1.05);border:3px solid #ffcc33}
-.balance-panel{margin-top:10px;font-size:18px;font-weight:bold}
 #registrationForm,#loginForm{display:none;background:#111;padding:20px;border-radius:10px;max-width:300px;margin:auto;margin-top:20px}
 #registrationForm input,#loginForm input{width:100%;padding:10px;margin:5px 0;border-radius:5px;border:none}
 #registrationForm button,#loginForm button{width:100%;padding:10px;margin-top:10px;border-radius:5px;border:none;background:#223311;color:#fff;font-weight:bold;cursor:pointer;transition:0.2s}
@@ -34,10 +32,7 @@ body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;ove
     <img src="assets/house_logo.png" alt="House Logo">
     <div>HoHoHo Bet</div>
   </div>
-  <div class="top-info">
-    <span id="playerIdDisplay"></span>
-    <span id="balanceDisplay"></span>
-  </div>
+  <div class="balance-panel" id="balancePanel"></div>
   <div class="top-actions">
     <a href="#" id="loginBtn" onclick="showLogin()">Login</a>
     <a href="#" id="registerBtn" onclick="showRegister()">Register</a>
@@ -53,8 +48,6 @@ body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;ove
 </div>
 
 <div class="main-content">
-  <div class="balance-panel" id="balancePanel"></div>
-
   <!-- Game placeholders -->
   <div class="game-grid" id="gameGrid"></div>
 
@@ -82,25 +75,19 @@ body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;ove
 </div>
 
 <script>
-/* User & balance */
 let user=JSON.parse(localStorage.getItem("user")||"null");
 let balance=Number(localStorage.getItem("balance")||0);
-
-/* Google Script URL */
 const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
 
-/* Update top bar */
 function updateTopBar(){
   if(user){
-    document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
-    document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
+    document.getElementById("balancePanel").innerText="ID: "+user.id+" | Balance: "+balance+" Birr";
     document.getElementById("loginBtn").style.display="none";
     document.getElementById("registerBtn").style.display="none";
     document.getElementById("logoutBtn").style.display="inline-block";
     document.getElementById("sideMenu").style.display="flex";
   } else {
-    document.getElementById("playerIdDisplay").innerText="";
-    document.getElementById("balanceDisplay").innerText="";
+    document.getElementById("balancePanel").innerText="";
     document.getElementById("loginBtn").style.display="inline-block";
     document.getElementById("registerBtn").style.display="inline-block";
     document.getElementById("logoutBtn").style.display="none";
@@ -109,24 +96,17 @@ function updateTopBar(){
 }
 updateTopBar();
 
-/* Logout */
 function logoutUser(){
   localStorage.removeItem("user");
   user=null;
   updateTopBar();
 }
 
-/* Show/hide registration & login */
 function showRegister(){document.getElementById("registrationForm").style.display="block";document.getElementById("loginForm").style.display="none";}
 function showLogin(){document.getElementById("loginForm").style.display="block";document.getElementById("registrationForm").style.display="none";}
+function toggleEye(id){const el=document.getElementById(id);el.type=el.type==="password"?"text":"password";}
 
-/* Toggle password visibility */
-function toggleEye(id){
-  const el=document.getElementById(id);
-  el.type=el.type==="password"?"text":"password";
-}
-
-/* Registration */
+/* Registration & Login */
 function registerUser(){
   const name=document.getElementById("regName").value;
   const phone=document.getElementById("regPhone").value;
@@ -141,7 +121,6 @@ function registerUser(){
   document.getElementById("registrationForm").style.display="none";
 }
 
-/* Login */
 function loginUser(){
   const phone=document.getElementById("loginPhone").value;
   const pass=document.getElementById("loginPassword").value;
@@ -154,18 +133,17 @@ function loginUser(){
   } else alert("Phone or password incorrect");
 }
 
-/* Side menu placeholders */
+/* Side menu actions */
 function showProfile(){alert("Profile page")}
 function showDeposit(){let amt=prompt("Enter deposit amount (min 100 Birr):");amt=Number(amt);if(isNaN(amt)||amt<100)return alert("Invalid amount");balance+=amt;localStorage.setItem("balance",balance);updateTopBar();sendGoogleScript({action:"deposit",playerId:user.id,amount:amt});}
 function showWithdraw(){let amt=prompt("Enter withdrawal amount (100-10000 Birr):");amt=Number(amt);if(isNaN(amt)||amt<100||amt>10000)return alert("Invalid amount");if(balance<amt)return alert("Insufficient balance");balance-=amt;localStorage.setItem("balance",balance);updateTopBar();sendGoogleScript({action:"withdraw",playerId:user.id,amount:amt});}
 function showHistory(){alert("History page")}
 
-/* Send to Google Script */
 function sendGoogleScript(data){
   fetch(googleScriptURL,{method:"POST",body:JSON.stringify(data),headers:{"Content-Type":"application/json"}}).then(r=>r.json()).then(console.log).catch(console.error);
 }
 
-/* Game placeholders with images */
+/* Game placeholders */
 const games=[
   {name:"Jungle Game",file:"game1.html",img:"assets/jungle.background.jpg"},
   {name:"Animal Slot",file:"game2.html",img:"assets/lion.jpg"},
@@ -184,10 +162,6 @@ games.forEach(g=>{
   div.appendChild(span);
   gameGrid.appendChild(div);
 });
-
-/* Display balance panel */
-document.getElementById("balancePanel").innerText=user?`Balance: ${balance} Birr`:"";
 </script>
-
 </body>
 </html>
