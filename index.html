@@ -1,76 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>HoHoHo Bet</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+<meta charset="UTF-8">
+<title>HoHoHo Bet | Casino Lobby</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{margin:0;padding:0;font-family:sans-serif;background:#0b1d0b;color:#fff;overflow-x:hidden}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33}
+.top-info span{margin-right:15px;font-weight:bold;font-size:16px}
+.top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
+.side-menu{position:fixed;left:0;top:50px;width:180px;background:#111;height:100%;padding:10px;display:flex;flex-direction:column;gap:10px}
+.side-menu button{width:100%;padding:10px;font-weight:bold;border:none;border-radius:5px;background:#223311;color:#fff;cursor:pointer;transition:0.2s}
+.side-menu button:hover{background:#ffcc33;color:#000}
+.main-content{margin-left:200px;padding:20px}
+.game-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:15px}
+.game-placeholder{background:#111;border-radius:10px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ffcc33;font-weight:bold;font-size:16px;cursor:pointer;transition:0.3s}
+.game-placeholder:hover{transform:scale(1.05);border:3px solid #ffcc33}
+.balance-panel{margin-top:10px;font-size:18px;font-weight:bold}
+.ticket-board{max-height:200px;overflow-y:auto;margin-top:15px;padding:0 10px}
+.ticket{background:#111;padding:10px;margin-bottom:10px;border-radius:10px}
+</style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="top-bar">
   <div class="logo">HoHoHo Bet</div>
-
   <div class="top-info">
     <span id="playerIdDisplay"></span>
     <span id="balanceDisplay"></span>
   </div>
-
   <div class="top-actions">
     <a href="login.html" id="loginBtn">Login</a>
     <a href="register.html" id="registerBtn">Register</a>
-    <a href="deposit.html" id="depositBtn" style="display:none;">Deposit</a>
+    <button onclick="logoutUser()" id="logoutBtn" style="display:none">Logout</button>
   </div>
 </div>
 
-<!-- MAIN -->
-<div class="container">
-
-  <!-- SIDE MENU -->
-  <div class="side-menu" id="sideMenu" style="display:none;">
-    <ul>
-      <li onclick="location.href='profile.html'">Profile</li>
-      <li onclick="location.href='deposit.html'">Deposit</li>
-      <li onclick="location.href='withdraw.html'">Withdraw</li>
-      <li onclick="logoutUser()">Logout</li>
-    </ul>
-  </div>
-
-  <!-- GAMES -->
-  <div class="games-area">
-    <div class="games-grid">
-
-      <!-- GAME 1 -->
-      <a href="game1.html">
-        <div class="game">Jungle Spin</div>
-      </a>
-
-      <!-- GAME 2 -->
-      <a href="game2.html">
-        <div class="game">Animal Match</div>
-      </a>
-
-      <!-- FAST KENO -->
-      <a href="keno.html">
-        <div class="game">Fast Keno</div>
-      </a>
-
-      <!-- PLACEHOLDERS -->
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-
-    </div>
-  </div>
-
+<div class="side-menu" id="sideMenu" style="display:none">
+  <button onclick="showProfile()">Profile</button>
+  <button onclick="showDeposit()">Deposit</button>
+  <button onclick="showWithdraw()">Withdraw</button>
+  <button onclick="showHistory()">History</button>
 </div>
+
+<div class="main-content">
+  <div class="balance-panel" id="balancePanel"></div>
+  <div class="game-grid" id="gameGrid"></div>
+  <div class="ticket-board" id="ticketBoard"></div>
+</div>
+
+<script>
+/* User & balance */
+let user=JSON.parse(localStorage.getItem("user")||"null");
+let balance=Number(localStorage.getItem("balance")||0);
+
+/* Google Script URL */
+const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
+
+/* Top bar & side menu */
+function updateTopBar(){
+  if(user){
+    document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
+    document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
+    document.getElementById("loginBtn").style.display="none";
+    document.getElementById("registerBtn").style.display="none";
+    document.getElementById("logoutBtn").style.display="inline-block";
+    document.getElementById("sideMenu").style.display="flex";
+  } else {
+    document.getElementById("playerIdDisplay").innerText="";
+    document.getElementById("balanceDisplay").innerText="";
+    document.getElementById("loginBtn").style.display="inline-block";
+    document.getElementById("registerBtn").style.display="inline-block";
+    document.getElementById("logoutBtn").style.display="none";
+    document.getElementById("sideMenu").style.display="none";
+  }
+}
+updateTopBar();
+
+/* Logout */
+function logoutUser(){
+  localStorage.removeItem("user");
+  user=null;
+  updateTopBar();
+}
+
+/* Side menu placeholders */
+function showProfile(){alert("Profile page")}
+function showDeposit(){
+  let amt=prompt("Enter deposit amount (min 100 Birr):");
+  amt=Number(amt);
+  if(isNaN(amt)||amt<100)return alert("Invalid amount");
+  balance+=amt;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+  sendGoogleScript({action:"deposit",playerId:user.id,amount:amt});
+}
+function showWithdraw(){
+  let amt=prompt("Enter withdrawal amount (100-10000 Birr):");
+  amt=Number(amt);
+  if(isNaN(amt)||amt<100||amt>10000)return alert("Invalid amount");
+  if(balance<amt)return alert("Insufficient balance");
+  balance-=amt;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+  sendGoogleScript({action:"withdraw",playerId:user.id,amount:amt});
+}
+function showHistory(){alert("History page")}
+
+/* Send to Google Script */
+function sendGoogleScript(data){
+  fetch(googleScriptURL,{
+    method:"POST",
+    body:JSON.stringify(data),
+    headers:{"Content-Type":"application/json"}
+  }).then(r=>r.json()).then(console.log).catch(console.error);
+}
+
+/* Game placeholders */
+const games=[
+  {name:"Jungle Game",file:"game1.html"},
+  {name:"Animal Slot",file:"game2.html"},
+  {name:"Fast Keno",file:"keno.html"},
+  {name:"Game 4",file:"#"},
+  {name:"Game 5",file:"#"},
+  {name:"Game 6",file:"#"},
+  {name:"Game 7",file:"#"},
+  {name:"Game 8",file:"#"},
+  {name:"Game 9",file:"#"},
+  {name:"Game 10",file:"#"},
+  {name:"Game 11",file:"#"},
+  {name:"Game 12",file:"#"},
+  {name:"Game 13",file:"#"},
+  {name:"Game 14",file:"#"},
+  {name:"Game 15",file:"#"},
+  {name:"Game 16",file:"#"},
+  {name:"Game 17",file:"#"},
+  {name:"Game 18",file:"#"},
+  {name:"Game 19",file:"#"},
+  {name:"Game 20",file:"#"},
+];
+
+const gameGrid=document.getElementById("gameGrid");
+games.forEach(g=>{
+  const div=document.createElement("div");
+  div.className="game-placeholder";
+  div.innerText=g.name;
+  div.onclick=()=>{if(g.file!=="#") location.href=g.file; else alert("Coming soon!");};
+  gameGrid.appendChild(div);
+});
+
+/* Display balance panel */
+document.getElementById("balancePanel").innerText=user?`Balance: ${balance} Birr`:"";
+</script>
 
 </body>
 </html>
