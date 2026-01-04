@@ -2,55 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>HoHoHo Bet Casino</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HoHoHo Bet</title>
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
 
-<header class="top-bar">
-  <div class="logo">🎰 HoHoHo Bet</div>
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="logo">HoHoHo Bet</div>
+
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
+  </div>
+
   <div class="top-actions">
     <a href="login.html" id="loginBtn">Login</a>
     <a href="register.html" id="registerBtn">Register</a>
-    <a href="deposit.html" id="depositBtn" class="hidden">Deposit</a>
+    <a href="deposit.html" id="depositBtn" style="display:none;">Deposit</a>
   </div>
-</header>
+</div>
 
+<!-- MAIN -->
 <div class="container">
 
-  <aside class="side-menu">
+  <!-- SIDE MENU -->
+  <div class="side-menu" id="sideMenu" style="display:none;">
     <ul>
-      <li>Profile</li>
-      <li><a href="deposit.html">Deposit</a></li>
-      <li><a href="withdraw.html">Withdraw</a></li>
-      <li>History</li>
+      <li onclick="location.href='profile.html'">Profile</li>
+      <li onclick="location.href='deposit.html'">Deposit</li>
+      <li onclick="location.href='withdraw.html'">Withdraw</li>
+      <li onclick="logoutUser()">Logout</li>
     </ul>
-  </aside>
+  </div>
 
-  <main class="games-area">
+  <!-- GAMES -->
+  <div class="games-area">
     <div class="games-grid">
 
+      <!-- GAME 1 -->
       <a href="game1.html">
-        <div class="game game-slot">Jungle Spin</div>
+        <div class="game">Jungle Spin</div>
       </a>
 
+      <!-- GAME 2 -->
       <a href="game2.html">
-        <div class="game game-match">Animal Match</div>
+        <div class="game">Animal Match</div>
       </a>
 
+      <!-- FAST KENO -->
       <a href="keno.html">
-        <div class="game game-keno">FAST KENO</div>
+        <div class="game">Fast Keno</div>
       </a>
 
-      <!-- placeholders -->
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
-      <div class="game">Coming Soon</div>
+      <!-- PLACEHOLDERS -->
       <div class="game">Coming Soon</div>
       <div class="game">Coming Soon</div>
       <div class="game">Coming Soon</div>
@@ -62,20 +68,9 @@
       <div class="game">Coming Soon</div>
 
     </div>
-  </main>
+  </div>
 
 </div>
-
-<script src="script.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded",()=>{
-  if(localStorage.getItem("loggedIn")==="true"){
-    loginBtn.classList.add("hidden");
-    registerBtn.classList.add("hidden");
-    depositBtn.classList.remove("hidden");
-  }
-});
-</script>
 
 </body>
 </html>
