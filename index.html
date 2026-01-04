@@ -10,8 +10,8 @@
 body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
 .top-bar{display:flex; justify-content:space-between; align-items:center; background:#ff5252; color:#fff; padding:10px 20px;}
 .top-bar .logo{font-size:1.8em; font-weight:bold;}
-.top-bar .actions button{margin-left:10px; padding:6px 12px; font-size:1em;}
-#balancePanel{margin-top:10px; font-weight:bold; text-align:right;}
+.top-bar .actions button{margin-left:10px; padding:6px 12px; font-size:1em; cursor:pointer;}
+#balancePanel{margin-top:5px; font-weight:bold; text-align:right;}
 .container{display:flex; flex-direction:column; align-items:center; padding:10px;}
 .games{display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin-top:20px;}
 .card{width:150px; height:150px; background:#fff; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; border:2px solid #d50000; transition:transform 0.2s;}
@@ -19,6 +19,8 @@ body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
 .card img{width:80px; height:80px; margin-bottom:10px; object-fit:cover;}
 .side-menu{position:fixed; top:0; left:0; width:200px; height:100%; background:#ffcc80; padding:20px; display:none; flex-direction:column; gap:10px;}
 .side-menu button{padding:8px 12px; font-size:1em; cursor:pointer;}
+.modal{display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:1000; width:300px;}
+.modal input{margin-bottom:10px; padding:6px; width:calc(100% - 12px);}
 </style>
 </head>
 <body>
@@ -26,8 +28,8 @@ body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
 <div class="top-bar">
   <div class="logo">HoHoHo Bet</div>
   <div class="actions">
-    <button id="loginBtn" onclick="document.getElementById('loginModal').style.display='block'">Login</button>
-    <button id="registerBtn" onclick="document.getElementById('registerModal').style.display='block'">Register</button>
+    <button id="loginBtn" onclick="showModal('loginModal')">Login</button>
+    <button id="registerBtn" onclick="showModal('registerModal')">Register</button>
     <button id="logoutBtn" onclick="logout()">Logout</button>
   </div>
 </div>
@@ -41,15 +43,15 @@ body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
 
 <div class="container">
   <div class="games">
-    <div class="card">
+    <div class="card" onclick="openGame('game1.html')">
       <img src="assets/jungle.background.jpg" alt="Game 1 Logo">
       <span>Game 1</span>
     </div>
-    <div class="card">
+    <div class="card" onclick="openGame('game2.html')">
       <img src="assets/animal2.jpg" alt="Game 2 Logo">
       <span>Game 2</span>
     </div>
-    <div class="card">
+    <div class="card" onclick="openGame('keno.html')">
       <img src="assets/keno.logo.jpg" alt="Fast Keno Logo">
       <span>Fast Keno</span>
     </div>
@@ -57,34 +59,33 @@ body{margin:0; font-family:Arial, sans-serif; background:#ffe0b2;}
 </div>
 
 <!-- LOGIN MODAL -->
-<div id="loginModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:1000;">
+<div id="loginModal" class="modal">
   <h3>Login</h3>
-  <input type="text" id="loginPhone" placeholder="Phone"><br><br>
+  <input type="text" id="loginPhone" placeholder="Phone"><br>
   <input type="password" id="loginPassword" placeholder="Password">
   <button onclick="togglePassword('loginPassword')">Show/Hide</button><br><br>
-  <button onclick="login(document.getElementById('loginPhone').value, document.getElementById('loginPassword').value); document.getElementById('loginModal').style.display='none'">Login</button>
-  <button onclick="document.getElementById('loginModal').style.display='none'">Cancel</button>
+  <button onclick="login()">Login</button>
+  <button onclick="hideModal('loginModal')">Cancel</button>
 </div>
 
 <!-- REGISTER MODAL -->
-<div id="registerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px; border-radius:10px; z-index:1000;">
+<div id="registerModal" class="modal">
   <h3>Register</h3>
-  <input type="text" id="regName" placeholder="Full Name"><br><br>
-  <input type="text" id="regPhone" placeholder="Phone"><br><br>
+  <input type="text" id="regName" placeholder="Full Name"><br>
+  <input type="text" id="regPhone" placeholder="Phone"><br>
   <input type="password" id="regPassword" placeholder="Password">
   <button onclick="togglePassword('regPassword')">Show/Hide</button><br><br>
-  <button onclick="register(document.getElementById('regName').value, document.getElementById('regPhone').value, document.getElementById('regPassword').value); document.getElementById('registerModal').style.display='none'">Register</button>
-  <button onclick="document.getElementById('registerModal').style.display='none'">Cancel</button>
+  <button onclick="register()">Register</button>
+  <button onclick="hideModal('registerModal')">Cancel</button>
 </div>
 
 <script>
-// SIDE MENU TOGGLE
-function toggleSideMenu(){
-  const menu=document.getElementById("sideMenu");
-  if(user) menu.style.display="flex";
-  else menu.style.display="none";
+function showModal(id){document.getElementById(id).style.display='block'}
+function hideModal(id){document.getElementById(id).style.display='none'}
+function togglePassword(id){
+  const inp=document.getElementById(id);
+  inp.type = inp.type==='password'?'text':'password';
 }
-document.addEventListener("DOMContentLoaded",toggleSideMenu);
 </script>
 
 </body>
