@@ -1,132 +1,210 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>Fast Keno | HoHoHo Bet</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
 <style>
-body{
-  background:#7a0000;
-  color:#fff;
-  font-family:Segoe UI;
-  text-align:center;
-}
-#timer{font-size:24px;margin:10px}
-#kenoBoard{
+body{background:#7b0000;color:#fff}
+.keno-wrap{display:flex;gap:20px;padding:20px}
+.keno-left{flex:2}
+.keno-right{flex:1;max-height:80vh;overflow-y:auto}
+.keno-grid{
   display:grid;
   grid-template-columns:repeat(10,1fr);
   gap:6px;
-  max-width:500px;
-  margin:20px auto;
 }
 .num{
   background:#111;
-  padding:12px;
   border-radius:6px;
+  padding:10px 0;
+  text-align:center;
   cursor:pointer;
+  font-weight:bold;
 }
 .num.selected{background:#ffcc33;color:#000}
 .num.drawn{background:#00c853;color:#000}
-
-#controls{margin:15px}
-#tickets{
-  max-height:150px;
-  overflow-y:auto;
-  background:#111;
-  margin:10px;
-  padding:10px;
+.controls{margin:15px 0;display:flex;align-items:center;gap:10px}
+.controls button{padding:6px 12px;font-size:16px}
+.ticket{background:#111;padding:10px;border-radius:10px;margin-bottom:10px}
+.draw-box{
+  font-size:40px;
+  text-align:center;
+  margin:10px 0;
 }
-.ticket{border-bottom:1px solid #333;padding:5px}
+.timer{font-size:18px;margin-bottom:10px}
 </style>
 </head>
 
 <body>
 
-<h2>FAST KENO</h2>
-<div id="timer">Next draw in: 60</div>
-
-<div id="kenoBoard"></div>
-
-<div id="controls">
-  Bet: <input type="number" id="bet" value="2" min="2">
-  <button onclick="placeBet()">BET</button>
+<div class="top-bar">
+  <div class="logo">Fast Keno</div>
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
+  </div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
+  </div>
 </div>
 
-<div id="tickets"></div>
+<div class="keno-wrap">
 
-<h3 id="result"></h3>
+  <!-- LEFT -->
+  <div class="keno-left">
+    <div class="timer">Next draw in: <span id="timer">60:00</span></div>
+    <div class="draw-box" id="drawBox">●</div>
+
+    <div class="keno-grid" id="kenoGrid"></div>
+
+    <div class="controls">
+      <button onclick="changeBet(-1)">−</button>
+      <strong>Bet: <span id="bet">2</span> Birr</strong>
+      <button onclick="changeBet(1)">+</button>
+      <button onclick="placeBet()">BET</button>
+    </div>
+
+    <div>Selected: <span id="selectedNums"></span></div>
+    <div>Potential Win: <span id="potentialWin">0</span> Birr</div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="keno-right">
+    <h3>Tickets</h3>
+    <div id="tickets"></div>
+  </div>
+
+</div>
 
 <script>
-let board=document.getElementById("kenoBoard");
-let selected=[];
-let tickets=[];
-let drawTime=60;
-let balance=Number(localStorage.getItem("mainBalance"))||500;
+if(!user) location.href="login.html";
 
+const grid=document.getElementById("kenoGrid");
+let selected=[];
+let bet=2;
+let tickets=[];
+let drawNumbers=[];
+
+/* build grid */
 for(let i=1;i<=80;i++){
-  let d=document.createElement("div");
+  const d=document.createElement("div");
   d.className="num";
-  d.textContent=i;
-  d.onclick=()=>toggle(i,d);
-  board.appendChild(d);
+  d.innerText=i;
+  d.onclick=()=>toggleNum(i,d);
+  grid.appendChild(d);
 }
 
-function toggle(n,el){
-  if(el.classList.contains("selected")){
-    el.classList.remove("selected");
+function toggleNum(n,el){
+  if(selected.includes(n)){
     selected=selected.filter(x=>x!==n);
-  }else if(selected.length<10){
-    el.classList.add("selected");
+    el.classList.remove("selected");
+  }else{
+    if(selected.length>=10)return;
     selected.push(n);
+    el.classList.add("selected");
   }
+  updateCalc();
+}
+
+function changeBet(v){
+  bet=Math.max(2,bet+v);
+  document.getElementById("bet").innerText=bet;
+  updateCalc();
+}
+
+function updateCalc(){
+  document.getElementById("selectedNums").innerText=selected.join(",");
+  document.getElementById("potentialWin").innerText=selected.length*bet*2;
 }
 
 function placeBet(){
-  if(selected.length===0) return;
-  let ticket={nums:[...selected]};
-  tickets.push(ticket);
-  let t=document.createElement("div");
-  t.className="ticket";
-  t.textContent="Ticket "+tickets.length+": "+ticket.nums.join(",");
-  document.getElementById("tickets").appendChild(t);
-  document.querySelectorAll(".selected").forEach(n=>n.classList.remove("selected"));
+  if(selected.length===0)return alert("Select numbers");
+  if(balance<bet)return alert("Low balance");
+
+  balance-=bet;
+  saveState();
+  updateTopBar();
+
+  tickets.push({
+    id:Date.now(),
+    nums:[...selected],
+    bet,
+    win:0
+  });
+
+  renderTickets();
+  clearSelection();
+}
+
+function clearSelection(){
   selected=[];
+  document.querySelectorAll(".num").forEach(n=>n.classList.remove("selected"));
+  updateCalc();
 }
 
-setInterval(()=>{
-  drawTime--;
-  document.getElementById("timer").textContent="Next draw in: "+drawTime;
-  if(drawTime<=0){ draw(); drawTime=60; }
-},1000);
+function renderTickets(){
+  const t=document.getElementById("tickets");
+  t.innerHTML="";
+  tickets.forEach(k=>{
+    const d=document.createElement("div");
+    d.className="ticket";
+    d.innerHTML=`#${k.id}<br>${k.nums.join(",")}<br>Bet:${k.bet}<br>Win:${k.win}`;
+    t.appendChild(d);
+  });
+}
 
-function draw(){
-  document.getElementById("result").textContent="";
-  let drawn=[];
-  while(drawn.length<20){
-    let n=Math.floor(Math.random()*80)+1;
-    if(!drawn.includes(n)) drawn.push(n);
-  }
+/* DRAW */
+function startDraw(){
+  drawNumbers=[];
   document.querySelectorAll(".num").forEach(n=>n.classList.remove("drawn"));
-  drawn.forEach(n=>{
-    board.children[n-1].classList.add("drawn");
-  });
+  let pool=[...Array(80)].map((_,i)=>i+1);
 
-  let win=0;
-  tickets.forEach(t=>{
-    let hits=t.nums.filter(n=>drawn.includes(n)).length;
-    if(hits>=3) win+=hits*5;
-  });
-
-  if(win>0){
-    document.getElementById("result").textContent="YOU WIN "+win+" BIRR";
-    balance+=win;
-  }else{
-    document.getElementById("result").textContent="Try again";
-  }
-  localStorage.setItem("mainBalance",balance);
-  tickets=[];
-  document.getElementById("tickets").innerHTML="";
+  let i=0;
+  const interval=setInterval(()=>{
+    if(i>=20){
+      clearInterval(interval);
+      settle();
+      return;
+    }
+    const r=pool.splice(Math.floor(Math.random()*pool.length),1)[0];
+    drawNumbers.push(r);
+    document.getElementById("drawBox").innerText=r;
+    document.querySelectorAll(".num")[r-1].classList.add("drawn");
+    i++;
+  },800);
 }
+
+function settle(){
+  let totalWin=0;
+  tickets.forEach(t=>{
+    const hits=t.nums.filter(n=>drawNumbers.includes(n)).length;
+    if(hits>=3){
+      t.win=hits*t.bet*2;
+      totalWin+=t.win;
+    }
+  });
+  balance+=totalWin;
+  saveState();
+  updateTopBar();
+  renderTickets();
+  alert(totalWin>0?`You win ${totalWin} Birr`:"Try again");
+}
+
+/* TIMER */
+let time=3600;
+setInterval(()=>{
+  time--;
+  let m=Math.floor(time/60);
+  let s=time%60;
+  document.getElementById("timer").innerText=
+    `${m}:${s.toString().padStart(2,"0")}`;
+  if(time<=0){
+    time=3600;
+    startDraw();
+  }
+},1000);
 </script>
 
 </body>
