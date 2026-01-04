@@ -9,7 +9,8 @@ body{margin:0;padding:0;font-family:sans-serif;background:#0b3d0b;color:#fff;ove
 .top-bar{display:flex;justify-content:space-between;padding:10px;background:#144214;border-bottom:3px solid #ffcc33}
 .top-info span{margin-right:15px;font-weight:bold;font-size:16px}
 .top-actions button,a{margin-left:10px;color:#fff;text-decoration:none;background:#111;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-weight:bold}
-.game-container{position:relative;width:100%;height:80vh;overflow:hidden;padding:20px;background-image:url('assets/jungle.background.jpg');background-size:cover;background-position:center}
+
+.game-container{position:relative;width:100%;height:70vh;overflow:hidden;padding:20px;background-image:url('assets/jungle.background.jpg');background-size:cover;background-position:center}
 .grid-container{display:grid;grid-template-columns:repeat(4,1fr);grid-gap:10px;width:70%;float:left}
 .grid-item{width:100%;height:100px;background:#111;border-radius:10px;display:flex;justify-content:center;align-items:center;cursor:pointer;transition:0.3s}
 .grid-item.selected{border:3px solid #ffcc33}
@@ -54,24 +55,28 @@ body{margin:0;padding:0;font-family:sans-serif;background:#0b3d0b;color:#fff;ove
 
 <script>
 if(!user) location.href="login.html";
+
+/* Config */
 const clickSound=document.getElementById("clickSound");
 const winSound=document.getElementById("winSound");
-
 const animals=["lion.jpg","zebra.jpg","tiger.jpg","hippo.jpg","elephant.jpg","giraffe.jpg"];
 const grid=document.getElementById("gameGrid");
+const ticketBoard=document.getElementById("ticketBoard");
+const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
+
 let selected=[];
 let bet=2;
-let tickets=[];
 let balance=Number(localStorage.getItem("balance")||0);
+let tickets=[];
 
-/* Top bar update */
+/* Top bar */
 function updateTopBar(){
   document.getElementById("playerIdDisplay").innerText="ID: "+user.id;
   document.getElementById("balanceDisplay").innerText="Balance: "+balance+" Birr";
 }
 updateTopBar();
 
-/* Build grid 4x4 */
+/* Build 4x4 grid */
 for(let i=0;i<16;i++){
   const div=document.createElement("div");
   div.className="grid-item";
@@ -84,24 +89,27 @@ for(let i=0;i<16;i++){
   grid.appendChild(div);
 }
 
+/* Select / deselect */
 function toggleSelect(el,index){
   if(selected.includes(index)){
     selected=selected.filter(x=>x!==index);
     el.classList.remove("selected");
   }else{
-    if(selected.length>=5) return; // max 5 selections
+    if(selected.length>=5) return; // max 5
     selected.push(index);
     el.classList.add("selected");
   }
   document.getElementById("selectedAnimals").innerText=selected.map(i=>animals[i]).join(", ");
 }
 
+/* Bet adjustment */
 function changeBet(v){
   bet=Math.max(2,bet+v);
   document.getElementById("betAmount").innerText=bet;
   clickSound.play();
 }
 
+/* Place bet */
 function placeBet(){
   if(selected.length===0)return alert("Select animals");
   if(balance<bet)return alert("Low balance");
@@ -110,26 +118,44 @@ function placeBet(){
   localStorage.setItem("balance",balance);
   updateTopBar();
 
-  tickets.push({id:Date.now(),nums:[...selected],bet,win:0});
+  // Calculate random result & win
+  const resultIndices=[];
+  for(let i=0;i<16;i++) resultIndices.push(Math.floor(Math.random()*animals.length));
+  let winCount=selected.filter(i=>resultIndices[i]%animals.length===i%animals.length).length;
+  let winAmount=winCount*bet*2; // standard casino payout formula
+  balance+=winAmount;
+  localStorage.setItem("balance",balance);
+  updateTopBar();
+  if(winAmount>0) winSound.play();
+
+  const ticket={id:Date.now(),selected:[...selected],bet,win:winAmount};
+  tickets.push(ticket);
   renderTickets();
+
   selected=[];
   document.querySelectorAll(".grid-item").forEach(g=>g.classList.remove("selected"));
   document.getElementById("selectedAnimals").innerText="";
+
+  // Update Google Script
+  fetch(googleScriptURL,{
+    method:"POST",
+    body:JSON.stringify({action:"updateBalance",playerId:user.id,balance}),
+    headers:{"Content-Type":"application/json"}
+  }).then(r=>r.json()).then(console.log).catch(console.error);
 }
 
 /* Render tickets */
 function renderTickets(){
-  const t=document.getElementById("ticketBoard");
-  t.innerHTML="";
+  ticketBoard.innerHTML="";
   tickets.forEach(tc=>{
     const div=document.createElement("div");
     div.className="ticket";
-    div.innerHTML=`#${tc.id}<br>${tc.nums.map(i=>animals[i]).join(", ")}<br>Bet: ${tc.bet}<br>Win: ${tc.win}`;
-    t.appendChild(div);
+    div.innerHTML=`#${tc.id}<br>Selected: ${tc.selected.map(i=>animals[i]).join(", ")}<br>Bet: ${tc.bet} Birr<br>Win: ${tc.win}`;
+    ticketBoard.appendChild(div);
   });
 }
 
-/* LOGOUT */
+/* Logout */
 function logoutUser(){
   localStorage.removeItem("user");
   location.href="login.html";
