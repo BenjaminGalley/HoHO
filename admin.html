@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel | HoHoHo Bet</title>
+<link rel="stylesheet" href="style.css">
+<script src="script.js" defer></script>
+<style>
+body{background:#0b0e1a;color:#fff}
+.admin-wrap{padding:20px}
+.section{margin-bottom:40px}
+.card{background:#111;padding:15px;border-radius:10px;margin-bottom:10px}
+.card button{margin-right:10px;padding:6px 12px}
+.approve{background:#00c853;color:#000}
+.reject{background:#d50000;color:#fff}
+</style>
+</head>
+
+<body>
+
+<div class="top-bar">
+  <div class="logo">ADMIN PANEL</div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
+  </div>
+</div>
+
+<div class="admin-wrap">
+
+  <!-- DEPOSITS -->
+  <div class="section">
+    <h2>Deposits</h2>
+    <div id="depositList"></div>
+  </div>
+
+  <!-- WITHDRAWALS -->
+  <div class="section">
+    <h2>Withdrawals</h2>
+    <div id="withdrawList"></div>
+  </div>
+
+</div>
+
+<script>
+/* SIMPLE ADMIN ACCESS (TEMP) */
+const ADMIN_PHONE = "0000";
+if(!user || user.phone !== ADMIN_PHONE){
+  alert("Admin only");
+  location.href="index.html";
+}
+
+/* RENDER DEPOSITS */
+const depList=document.getElementById("depositList");
+deposits.forEach(d=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`
+    <b>${d.playerId}</b><br>
+    ${d.name} (${d.phone})<br>
+    ${d.method}<br>
+    ${d.senderName} - ${d.senderPhone}<br>
+    Amount: ${d.amount}<br>
+    Status: ${d.status}<br>
+    ${d.status==="PENDING" ? `
+      <button class="approve" onclick="adminApproveDeposit(${d.id});location.reload()">Approve</button>
+      <button class="reject" onclick="adminRejectDeposit(${d.id});location.reload()">Reject</button>
+    ` : ""}
+  `;
+  depList.appendChild(c);
+});
+
+/* RENDER WITHDRAWALS */
+const withList=document.getElementById("withdrawList");
+withdrawals.forEach(w=>{
+  const c=document.createElement("div");
+  c.className="card";
+  c.innerHTML=`
+    <b>${w.playerId}</b><br>
+    ${w.method}<br>
+    ${w.receiverName} - ${w.receiverPhone}<br>
+    Amount: ${w.amount}<br>
+    Status: ${w.status}<br>
+    ${w.status==="PENDING" ? `
+      <button class="approve" onclick="adminApproveWithdrawal(${w.id});location.reload()">Approve</button>
+      <button class="reject" onclick="adminRejectWithdrawal(${w.id});location.reload()">Reject</button>
+    ` : ""}
+  `;
+  withList.appendChild(c);
+});
+</script>
+
+</body>
+</html>
