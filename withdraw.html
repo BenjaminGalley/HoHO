@@ -3,43 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <title>Withdraw | HoHoHo Bet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
 
-<header class="top-bar">
-  <div class="logo">🎰 HoHoHo Bet</div>
-</header>
-
-<div class="container" style="justify-content:center;align-items:center;">
-  <div style="background:#11162a;padding:30px;border-radius:20px;width:360px;">
-    <h2 style="text-align:center;margin-bottom:20px;">Withdraw</h2>
-
-    <select id="method"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-      <option value="">Select Method</option>
-      <option value="Telebirr">Telebirr</option>
-      <option value="CBE">CBE</option>
-    </select>
-
-    <input id="receiverPhone" type="tel" placeholder="Receiver Phone Number"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-
-    <input id="receiverName" type="text" placeholder="Receiver Full Name"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-
-    <input id="amount" type="number" placeholder="Amount (100 – 10,000 birr)"
-      style="width:100%;padding:12px;margin-bottom:20px;border-radius:10px;border:none;">
-
-    <button onclick="submitWithdrawal()"
-      style="width:100%;padding:12px;border:none;border-radius:20px;
-      background:linear-gradient(90deg,#ff0080,#7928ca);color:#fff;font-size:16px;">
-      Request Withdrawal
-    </button>
+<div class="top-bar">
+  <div class="logo">HoHoHo Bet</div>
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
+  </div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
   </div>
 </div>
 
-<script src="script.js"></script>
+<div class="container">
+  <div class="side-menu" id="sideMenu">
+    <ul>
+      <li onclick="location.href='profile.html'">Profile</li>
+      <li onclick="location.href='deposit.html'">Deposit</li>
+      <li onclick="logoutUser()">Logout</li>
+    </ul>
+  </div>
+
+  <div class="games-area">
+    <h2>Withdraw</h2>
+
+    <form class="form-card" onsubmit="submitWithdrawal(event)">
+      <label>Payment Method</label>
+      <select id="withMethod" required>
+        <option value="Telebirr">Telebirr</option>
+        <option value="CBE">CBE</option>
+      </select>
+
+      <label>Receiver Name</label>
+      <input type="text" id="withName" required>
+
+      <label>Receiver Phone</label>
+      <input type="text" id="withPhone" required>
+
+      <label>Amount (100 – 10,000 Birr)</label>
+      <input type="number" id="withAmount" min="100" max="10000" required>
+
+      <button type="submit">Request Withdrawal</button>
+    </form>
+
+    <p class="notice">
+      ⚠ Amount is held instantly. Rejected withdrawals are refunded.
+    </p>
+  </div>
+</div>
+
+<script>
+  if (!user) location.href = "login.html";
+</script>
+
 </body>
 </html>
