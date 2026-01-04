@@ -1,206 +1,177 @@
-/* ===============================
-   GLOBAL STATE (LOCAL STORAGE)
-================================ */
-let user = JSON.parse(localStorage.getItem("user")) || null;
-let balance = Number(localStorage.getItem("balance")) || 0;
-let deposits = JSON.parse(localStorage.getItem("deposits")) || [];
-let withdrawals = JSON.parse(localStorage.getItem("withdrawals")) || [];
+// =========================
+// USER MANAGEMENT
+// =========================
+let users = JSON.parse(localStorage.getItem("users") || "[]");
+let user = JSON.parse(localStorage.getItem("user") || "null");
+let balance = Number(localStorage.getItem("balance") || 0);
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
-
-/* ===============================
-   UTIL
-================================ */
-function saveState() {
-  localStorage.setItem("user", JSON.stringify(user));
-  localStorage.setItem("balance", balance);
-  localStorage.setItem("deposits", JSON.stringify(deposits));
-  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
-}
-
-function generatePlayerId() {
-  return "HHB-" + Math.floor(100000 + Math.random() * 900000);
-}
-
-function updateTopBar() {
-  const balanceEl = document.getElementById("balanceDisplay");
-  const playerEl = document.getElementById("playerIdDisplay");
+// -------------------------
+// UPDATE UI AFTER LOGIN
+// -------------------------
+function updateUI() {
   const loginBtn = document.getElementById("loginBtn");
   const registerBtn = document.getElementById("registerBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
   const depositBtn = document.getElementById("depositBtn");
-  const sideMenu = document.getElementById("sideMenu");
+  const withdrawalBtn = document.getElementById("withdrawalBtn");
+  const profileBtn = document.getElementById("profileBtn");
+  const balancePanel = document.getElementById("balancePanel");
 
   if (user) {
-    if (balanceEl) balanceEl.innerText = `Balance: ${balance} Birr`;
-    if (playerEl) playerEl.innerText = `ID: ${user.playerId}`;
-    if (loginBtn) loginBtn.style.display = "none";
-    if (registerBtn) registerBtn.style.display = "none";
-    if (depositBtn) depositBtn.style.display = "inline-block";
-    if (sideMenu) sideMenu.style.display = "block";
+    loginBtn.style.display = "none";
+    registerBtn.style.display = "none";
+    logoutBtn.style.display = "inline-block";
+    depositBtn.style.display = "inline-block";
+    withdrawalBtn.style.display = "inline-block";
+    profileBtn.style.display = "inline-block";
+    balancePanel.innerText = `ID: ${user.id} | Balance: ${balance} Birr`;
   } else {
-    if (balanceEl) balanceEl.innerText = "";
-    if (playerEl) playerEl.innerText = "";
-    if (loginBtn) loginBtn.style.display = "inline-block";
-    if (registerBtn) registerBtn.style.display = "inline-block";
-    if (depositBtn) depositBtn.style.display = "none";
-    if (sideMenu) sideMenu.style.display = "none";
+    loginBtn.style.display = "inline-block";
+    registerBtn.style.display = "inline-block";
+    logoutBtn.style.display = "none";
+    depositBtn.style.display = "none";
+    withdrawalBtn.style.display = "none";
+    profileBtn.style.display = "none";
+    balancePanel.innerText = "";
   }
 }
+updateUI();
 
-/* ===============================
-   REGISTRATION
-================================ */
-function registerUser(e) {
-  e.preventDefault();
-  const name = document.getElementById("regName").value.trim();
-  const phone = document.getElementById("regPhone").value.trim();
-  const password = document.getElementById("regPassword").value.trim();
-
-  if (!name || !phone || !password) {
-    alert("All fields required");
-    return;
-  }
-
-  user = {
-    name,
-    phone,
-    password,
-    playerId: generatePlayerId()
-  };
-
-  balance = 0;
-  saveState();
-  updateTopBar();
-  alert("Registration successful");
-  window.location.href = "index.html";
+// -------------------------
+// LOGIN & LOGOUT
+// -------------------------
+function login(phone, password) {
+  const u = users.find(usr => usr.phone === phone && usr.password === password);
+  if (!u) return alert("Invalid phone or password");
+  user = u;
+  localStorage.setItem("user", JSON.stringify(user));
+  balance = Number(localStorage.getItem(`balance_${user.id}`) || 0);
+  updateUI();
 }
 
-/* ===============================
-   LOGIN
-================================ */
-function loginUser(e) {
-  e.preventDefault();
-  const phone = document.getElementById("loginPhone").value.trim();
-  const password = document.getElementById("loginPassword").value.trim();
-
-  if (!user || phone !== user.phone || password !== user.password) {
-    alert("Invalid phone or password");
-    return;
-  }
-
-  updateTopBar();
-  alert("Login successful");
-  window.location.href = "index.html";
-}
-
-/* ===============================
-   LOGOUT
-================================ */
-function logoutUser() {
+function logout() {
   user = null;
-  saveState();
-  updateTopBar();
-  window.location.href = "index.html";
+  localStorage.removeItem("user");
+  balance = 0;
+  updateUI();
 }
 
-/* ===============================
-   DEPOSIT (GOOGLE SCRIPT)
-================================ */
-async function submitDeposit(e) {
-  e.preventDefault();
-  const method = document.getElementById("depMethod").value;
-  const senderName = document.getElementById("depSenderName").value.trim();
-  const senderPhone = document.getElementById("depSenderPhone").value.trim();
-  const amount = Number(document.getElementById("depAmount").value);
+// -------------------------
+// REGISTRATION
+// -------------------------
+function register(name, phone, password) {
+  if (!name || !phone || !password) return alert("Fill all fields");
+  if (users.find(u => u.phone === phone)) return alert("Phone already registered");
 
-  if (amount < 100) {
-    alert("Minimum deposit is 100 Birr");
-    return;
-  }
+  const id = "P" + Date.now();
+  const newUser = { id, name, phone, password };
+  users.push(newUser);
+  localStorage.setItem("users", JSON.stringify(users));
+  localStorage.setItem(`balance_${id}`, 0); // start with 0 balance
+  alert(`Registered! Your ID: ${id}`);
+}
 
-  const payload = {
-    type: "deposit",
-    playerId: user.playerId,
+// =========================
+// DEPOSIT & WITHDRAWAL (local pending for now)
+// =========================
+let deposits = JSON.parse(localStorage.getItem("deposits") || "[]");
+let withdrawals = JSON.parse(localStorage.getItem("withdrawals") || "[]");
+
+function deposit(amount, method, senderName, senderPhone) {
+  if (!user) return alert("Login first");
+  if (amount < 100) return alert("Minimum deposit 100 Birr");
+
+  const dep = {
+    id: Date.now(),
+    playerId: user.id,
     name: user.name,
     phone: user.phone,
     amount,
     method,
     senderName,
-    senderPhone
+    senderPhone,
+    status: "PENDING"
   };
-
-  try {
-    const res = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" }
-    });
-    const data = await res.json();
-    if (data.status === "success") {
-      deposits.push({...payload, status:"PENDING"});
-      saveState();
-      alert("Deposit submitted for approval");
-    }
-  } catch(err){
-    alert("Deposit failed: " + err);
-  }
+  deposits.push(dep);
+  localStorage.setItem("deposits", JSON.stringify(deposits));
+  alert("Deposit request submitted");
 }
 
-/* ===============================
-   WITHDRAWAL (GOOGLE SCRIPT)
-================================ */
-async function submitWithdrawal(e) {
-  e.preventDefault();
-  const method = document.getElementById("withMethod").value;
-  const receiverName = document.getElementById("withName").value.trim();
-  const receiverPhone = document.getElementById("withPhone").value.trim();
-  const amount = Number(document.getElementById("withAmount").value);
+function withdraw(amount, method, receiverName, receiverPhone) {
+  if (!user) return alert("Login first");
+  if (amount < 100) return alert("Minimum 100 Birr");
+  if (amount > balance) return alert("Insufficient balance");
 
-  if (amount < 100 || amount > 10000) {
-    alert("Withdrawal must be 100 – 10,000 Birr");
-    return;
-  }
-  if (amount > balance) {
-    alert("Insufficient balance");
-    return;
-  }
-
-  balance -= amount; // hold instantly
-  saveState();
-  updateTopBar();
-
-  const payload = {
-    type: "withdrawal",
-    playerId: user.playerId,
-    name: user.name,
-    phone: user.phone,
+  const w = {
+    id: Date.now(),
+    playerId: user.id,
     amount,
     method,
     receiverName,
-    receiverPhone
+    receiverPhone,
+    status: "PENDING"
   };
-
-  try {
-    const res = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(payload),
-      headers: { "Content-Type": "application/json" }
-    });
-    const data = await res.json();
-    if(data.status==="success"){
-      withdrawals.push({...payload, status:"PENDING"});
-      saveState();
-      alert("Withdrawal request submitted");
-    }
-  } catch(err){
-    alert("Withdrawal failed: " + err);
-    balance += amount; // rollback
-    saveState();
-    updateTopBar();
-  }
+  withdrawals.push(w);
+  balance -= amount; // temp deduct until admin approves
+  localStorage.setItem("balance", balance);
+  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+  alert("Withdrawal request submitted");
+  updateUI();
 }
 
-/* ===============================
-   INIT
-================================ */
-document.addEventListener("DOMContentLoaded", updateTopBar);
+// =========================
+// ADMIN FUNCTIONS
+// =========================
+function adminApproveDeposit(id) {
+  const d = deposits.find(dep => dep.id === id);
+  if (!d) return;
+  d.status = "APPROVED";
+  balance = Number(localStorage.getItem(`balance_${d.playerId}`) || 0) + d.amount;
+  localStorage.setItem(`balance_${d.playerId}`, balance);
+  localStorage.setItem("deposits", JSON.stringify(deposits));
+}
+
+function adminRejectDeposit(id) {
+  const d = deposits.find(dep => dep.id === id);
+  if (!d) return;
+  d.status = "REJECTED";
+  localStorage.setItem("deposits", JSON.stringify(deposits));
+}
+
+function adminApproveWithdrawal(id) {
+  const w = withdrawals.find(wd => wd.id === id);
+  if (!w) return;
+  w.status = "APPROVED";
+  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+}
+
+function adminRejectWithdrawal(id) {
+  const w = withdrawals.find(wd => wd.id === id);
+  if (!w) return;
+  w.status = "REJECTED";
+  balance += w.amount; // return money to user
+  localStorage.setItem("balance", balance);
+  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+  updateUI();
+}
+
+// =========================
+// GAME PLACEHOLDER CLICK
+// =========================
+document.querySelectorAll(".card").forEach((c, i)=>{
+  c.addEventListener("click",()=>{
+    if(!user) return alert("Login to play");
+    if(i===0) window.location.href="game1.html";
+    if(i===1) window.location.href="game2.html";
+    if(i===2) window.location.href="keno.html";
+  });
+});
+
+// =========================
+// PASSWORD EYE TOGGLE
+// =========================
+function togglePassword(id) {
+  const input = document.getElementById(id);
+  if(input.type==="password") input.type="text";
+  else input.type="password";
+}
