@@ -1,112 +1,206 @@
 /* ===============================
-   HoHoHo Bet – Frontend Script
-   (No backend yet)
-   =============================== */
+   GLOBAL STATE (LOCAL STORAGE)
+================================ */
+let user = JSON.parse(localStorage.getItem("user")) || null;
+let balance = Number(localStorage.getItem("balance")) || 0;
+let deposits = JSON.parse(localStorage.getItem("deposits")) || [];
+let withdrawals = JSON.parse(localStorage.getItem("withdrawals")) || [];
 
-/* ---------- Utilities ---------- */
+/* ===============================
+   UTIL
+================================ */
+function saveState() {
+  localStorage.setItem("user", JSON.stringify(user));
+  localStorage.setItem("balance", balance);
+  localStorage.setItem("deposits", JSON.stringify(deposits));
+  localStorage.setItem("withdrawals", JSON.stringify(withdrawals));
+}
+
 function generatePlayerId() {
   return "HHB-" + Math.floor(100000 + Math.random() * 900000);
 }
 
-/* ---------- Registration ---------- */
-function registerPlayer() {
-  const fullName = document.getElementById("fullName").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-  const password = document.getElementById("password").value;
+function updateTopBar() {
+  const balanceEl = document.getElementById("balanceDisplay");
+  const playerEl = document.getElementById("playerIdDisplay");
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const depositBtn = document.getElementById("depositBtn");
+  const sideMenu = document.getElementById("sideMenu");
 
-  if (!fullName || !phone || !password) {
+  if (user) {
+    if (balanceEl) balanceEl.innerText = `Balance: ${balance} Birr`;
+    if (playerEl) playerEl.innerText = `ID: ${user.playerId}`;
+    if (loginBtn) loginBtn.style.display = "none";
+    if (registerBtn) registerBtn.style.display = "none";
+    if (depositBtn) depositBtn.style.display = "inline-block";
+    if (sideMenu) sideMenu.style.display = "block";
+  } else {
+    if (balanceEl) balanceEl.innerText = "";
+    if (playerEl) playerEl.innerText = "";
+    if (loginBtn) loginBtn.style.display = "inline-block";
+    if (registerBtn) registerBtn.style.display = "inline-block";
+    if (depositBtn) depositBtn.style.display = "none";
+    if (sideMenu) sideMenu.style.display = "none";
+  }
+}
+
+/* ===============================
+   REGISTRATION
+================================ */
+function registerUser(e) {
+  e.preventDefault();
+  const name = document.getElementById("regName").value.trim();
+  const phone = document.getElementById("regPhone").value.trim();
+  const password = document.getElementById("regPassword").value.trim();
+
+  if (!name || !phone || !password) {
     alert("All fields required");
     return;
   }
 
-  const playerId = generatePlayerId();
-
-  const playerData = {
-    playerId,
-    fullName,
-    phone
+  user = {
+    name,
+    phone,
+    password,
+    playerId: generatePlayerId()
   };
 
-  localStorage.setItem("player", JSON.stringify(playerData));
-  localStorage.setItem("loggedIn", "true");
-
-  alert("Registration successful. Your Player ID: " + playerId);
+  balance = 0; // NO AUTO MONEY
+  saveState();
+  updateTopBar();
+  alert("Registration successful");
   window.location.href = "index.html";
 }
 
-/* ---------- Login ---------- */
-function loginPlayer() {
-  const phone = document.getElementById("phone").value.trim();
-  const stored = JSON.parse(localStorage.getItem("player"));
+/* ===============================
+   LOGIN
+================================ */
+function loginUser(e) {
+  e.preventDefault();
+  const phone = document.getElementById("loginPhone").value.trim();
+  const password = document.getElementById("loginPassword").value.trim();
 
-  if (!stored || stored.phone !== phone) {
-    alert("Invalid login");
+  if (!user || phone !== user.phone || password !== user.password) {
+    alert("Invalid phone or password");
     return;
   }
 
-  localStorage.setItem("loggedIn", "true");
+  updateTopBar();
+  alert("Login successful");
   window.location.href = "index.html";
 }
 
-/* ---------- Deposit ---------- */
-function submitDeposit() {
-  const method = document.getElementById("method").value;
-  const senderPhone = document.getElementById("senderPhone").value.trim();
-  const senderName = document.getElementById("senderName").value.trim();
-  const amount = Number(document.getElementById("amount").value);
+/* ===============================
+   LOGOUT
+================================ */
+function logoutUser() {
+  user = null;
+  saveState();
+  updateTopBar();
+  window.location.href = "index.html";
+}
 
-  if (!senderPhone || !senderName || amount < 100) {
-    alert("Minimum deposit is 100 birr");
+/* ===============================
+   DEPOSIT (PENDING)
+================================ */
+function submitDeposit(e) {
+  e.preventDefault();
+  const method = document.getElementById("depMethod").value;
+  const senderName = document.getElementById("depSenderName").value.trim();
+  const senderPhone = document.getElementById("depSenderPhone").value.trim();
+  const amount = Number(document.getElementById("depAmount").value);
+
+  if (amount < 100) {
+    alert("Minimum deposit is 100 Birr");
     return;
   }
 
-  const depositData = {
-    type: "deposit",
+  deposits.push({
+    id: Date.now(),
+    playerId: user.playerId,
+    name: user.name,
+    phone: user.phone,
     method,
-    senderPhone,
     senderName,
+    senderPhone,
     amount,
-    date: new Date().toISOString()
-  };
+    status: "PENDING"
+  });
 
-  console.log("DEPOSIT:", depositData);
-  alert("Deposit submitted (pending confirmation)");
+  saveState();
+  alert("Deposit submitted for approval");
 }
 
-/* ---------- Withdrawal ---------- */
-function submitWithdrawal() {
-  const method = document.getElementById("method").value;
-  const receiverPhone = document.getElementById("receiverPhone").value.trim();
-  const receiverName = document.getElementById("receiverName").value.trim();
-  const amount = Number(document.getElementById("amount").value);
+/* ===============================
+   WITHDRAWAL (INSTANT HOLD)
+================================ */
+function submitWithdrawal(e) {
+  e.preventDefault();
+  const method = document.getElementById("withMethod").value;
+  const receiverName = document.getElementById("withName").value.trim();
+  const receiverPhone = document.getElementById("withPhone").value.trim();
+  const amount = Number(document.getElementById("withAmount").value);
 
-  if (!receiverPhone || !receiverName || amount < 100 || amount > 10000) {
-    alert("Withdrawal must be 100 – 10,000 birr");
+  if (amount < 100 || amount > 10000) {
+    alert("Withdrawal must be 100 – 10,000 Birr");
+    return;
+  }
+  if (amount > balance) {
+    alert("Insufficient balance");
     return;
   }
 
-  const withdrawalData = {
-    type: "withdraw",
+  balance -= amount; // HOLD AMOUNT
+  withdrawals.push({
+    id: Date.now(),
+    playerId: user.playerId,
     method,
-    receiverPhone,
     receiverName,
+    receiverPhone,
     amount,
-    date: new Date().toISOString()
-  };
+    status: "PENDING"
+  });
 
-  console.log("WITHDRAW:", withdrawalData);
-  alert("Withdrawal request sent");
+  saveState();
+  updateTopBar();
+  alert("Withdrawal request submitted");
 }
 
-/* ---------- UI State ---------- */
-document.addEventListener("DOMContentLoaded", () => {
-  if (localStorage.getItem("loggedIn") === "true") {
-    const loginBtn = document.getElementById("loginBtn");
-    const registerBtn = document.getElementById("registerBtn");
-    const depositBtn = document.getElementById("depositBtn");
+/* ===============================
+   ADMIN ACTIONS (TEMP)
+================================ */
+function adminApproveDeposit(id) {
+  const d = deposits.find(x => x.id === id);
+  if (!d || d.status !== "PENDING") return;
+  d.status = "APPROVED";
+  balance += d.amount;
+  saveState();
+}
 
-    if (loginBtn) loginBtn.classList.add("hidden");
-    if (registerBtn) registerBtn.classList.add("hidden");
-    if (depositBtn) depositBtn.classList.remove("hidden");
-  }
-});
+function adminRejectDeposit(id) {
+  const d = deposits.find(x => x.id === id);
+  if (!d) return;
+  d.status = "REJECTED";
+  saveState();
+}
+
+function adminApproveWithdrawal(id) {
+  const w = withdrawals.find(x => x.id === id);
+  if (!w) return;
+  w.status = "APPROVED";
+  saveState();
+}
+
+function adminRejectWithdrawal(id) {
+  const w = withdrawals.find(x => x.id === id);
+  if (!w || w.status !== "PENDING") return;
+  w.status = "REJECTED";
+  balance += w.amount; // RETURN MONEY
+  saveState();
+}
+
+/* ===============================
+   INIT
+================================ */
+document.addEventListener("DOMContentLoaded", updateTopBar);
