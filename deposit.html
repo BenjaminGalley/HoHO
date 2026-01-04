@@ -3,43 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <title>Deposit | HoHoHo Bet</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
 </head>
 <body>
 
-<header class="top-bar">
-  <div class="logo">🎰 HoHoHo Bet</div>
-</header>
-
-<div class="container" style="justify-content:center;align-items:center;">
-  <div style="background:#11162a;padding:30px;border-radius:20px;width:360px;">
-    <h2 style="text-align:center;margin-bottom:20px;">Deposit</h2>
-
-    <select id="method"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-      <option value="">Select Method</option>
-      <option value="Telebirr">Telebirr – 0943595090</option>
-      <option value="CBE">CBE – 0911045825</option>
-    </select>
-
-    <input id="senderPhone" type="tel" placeholder="Sender Phone Number"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-
-    <input id="senderName" type="text" placeholder="Sender Full Name"
-      style="width:100%;padding:12px;margin-bottom:15px;border-radius:10px;border:none;">
-
-    <input id="amount" type="number" placeholder="Amount (Min 100 birr)"
-      style="width:100%;padding:12px;margin-bottom:20px;border-radius:10px;border:none;">
-
-    <button onclick="submitDeposit()"
-      style="width:100%;padding:12px;border:none;border-radius:20px;
-      background:linear-gradient(90deg,#ff0080,#7928ca);color:#fff;font-size:16px;">
-      Submit Deposit
-    </button>
+<div class="top-bar">
+  <div class="logo">HoHoHo Bet</div>
+  <div class="top-info">
+    <span id="playerIdDisplay"></span>
+    <span id="balanceDisplay"></span>
+  </div>
+  <div class="top-actions">
+    <a href="index.html">Lobby</a>
   </div>
 </div>
 
-<script src="script.js"></script>
+<div class="container">
+  <div class="side-menu" id="sideMenu">
+    <ul>
+      <li onclick="location.href='profile.html'">Profile</li>
+      <li onclick="location.href='withdraw.html'">Withdraw</li>
+      <li onclick="logoutUser()">Logout</li>
+    </ul>
+  </div>
+
+  <div class="games-area">
+    <h2>Deposit</h2>
+
+    <form class="form-card" onsubmit="submitDeposit(event)">
+      <label>Payment Method</label>
+      <select id="depMethod" required>
+        <option value="Telebirr">Telebirr — 0943595090</option>
+        <option value="CBE">CBE — 0911045825</option>
+      </select>
+
+      <label>Sender Name</label>
+      <input type="text" id="depSenderName" required>
+
+      <label>Sender Phone</label>
+      <input type="text" id="depSenderPhone" required>
+
+      <label>Amount (Min 100 Birr)</label>
+      <input type="number" id="depAmount" min="100" required>
+
+      <button type="submit">Submit Deposit</button>
+    </form>
+
+    <p class="notice">
+      ⚠ Deposit will be credited only after admin approval.
+    </p>
+  </div>
+</div>
+
+<script>
+  if (!user) location.href = "login.html";
+</script>
+
 </body>
 </html>
