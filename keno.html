@@ -5,175 +5,176 @@
 <title>Fast Keno | HoHoHo Bet</title>
 <link rel="stylesheet" href="style.css">
 <style>
-body{margin:0;padding:0;font-family:sans-serif;background:#ffeedd;color:#000;overflow-x:hidden}
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#223311;border-bottom:3px solid #ffcc33;color:#fff}
-.logo-container{display:flex;align-items:center;gap:10px}
-.logo-container img{height:50px;border-radius:10px}
-.balance-panel{margin:10px;font-weight:bold;font-size:18px}
-.main-content{padding:20px;text-align:center}
-.keno-header{font-size:28px;font-weight:bold;color:#ffcc33;margin-bottom:15px;text-shadow:1px 1px 2px #000}
-.keno-table{display:grid;grid-template-columns:repeat(10,1fr);grid-gap:5px;margin:auto;width:90%;border:3px solid #ffcc33;background:#cc0000;padding:10px;border-radius:10px}
-.keno-number{width:100%;padding-top:100%;position:relative;background:#ff4444;border:1px solid #ffd700;border-radius:5px;cursor:pointer;transition:0.2s}
-.keno-number span{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-weight:bold;color:#fff;font-size:14px}
-.keno-number.selected{background:#ffcc33;color:#000;font-weight:bold}
-.bet-panel{margin-top:10px;display:flex;justify-content:center;align-items:center;gap:10px}
-.bet-panel button{padding:5px 12px;font-weight:bold;border-radius:5px;border:none;cursor:pointer;background:#223311;color:#fff;transition:0.2s}
-.bet-panel button:hover{background:#ffcc33;color:#000}
-.ticket-board{margin-top:15px;display:flex;overflow-x:auto;gap:10px;padding:5px}
-.ticket{background:#111;color:#ffcc33;padding:10px;border-radius:10px;min-width:180px;white-space:nowrap}
-.draw-board{margin-top:15px;font-size:20px;font-weight:bold;display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
-.timer{font-size:20px;font-weight:bold;margin:10px;color:#223311}
+body{margin:0;padding:0;font-family:sans-serif;background:#330000;color:#fff;display:flex;flex-direction:column;align-items:center}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#551111;border-bottom:3px solid #ffcc33;width:100%;position:sticky;top:0;z-index:1000}
+.top-bar .logo{font-size:22px;font-weight:bold}
+.balance-panel{font-weight:bold;font-size:18px;color:#ffcc33}
+.keno-container{display:flex;flex-direction:column;align-items:center;margin-top:20px}
+.keno-table{display:grid;grid-template-columns:repeat(10,50px);grid-gap:5px;background:#ff4444;padding:10px;border-radius:10px}
+.keno-cell{width:50px;height:50px;background:#fff;color:#000;display:flex;justify-content:center;align-items:center;border-radius:5px;font-weight:bold;cursor:pointer;transition:0.2s}
+.keno-cell.selected{background:#00c853;color:#000}
+.keno-cell.winner{background:#ffeb3b;color:#000;font-weight:bold}
+.tickets-container{display:flex;overflow-x:auto;margin-top:10px;padding-bottom:10px}
+.ticket{min-width:120px;background:#111;border:2px solid #ffcc33;border-radius:8px;margin-right:10px;padding:10px;font-weight:bold;color:#ffcc33}
+.bet-panel{display:flex;justify-content:center;align-items:center;margin-top:10px}
+.bet-panel button{margin:0 5px;padding:8px 15px;font-weight:bold;border-radius:6px;border:none;cursor:pointer}
+.bet-amount{font-weight:bold;font-size:18px;margin:0 10px;width:60px;text-align:center}
+.pop-numbers{display:flex;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.pop-numbers span{background:#ffd600;color:#000;font-weight:bold;margin:3px;padding:6px 8px;border-radius:5px;font-size:16px}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="logo-container">
-    <img src="assets/house_logo.png" alt="House Logo">
-    <div>HoHoHo Bet</div>
-  </div>
+  <div class="logo">Fast Keno</div>
   <div class="balance-panel" id="balancePanel"></div>
 </div>
 
-<div class="main-content">
-  <div class="keno-header">Fast Keno</div>
-
-  <div class="timer" id="roundTimer">Next draw in: 60s</div>
-
+<div class="keno-container">
   <div class="keno-table" id="kenoTable"></div>
-
-  <div class="ticket-board" id="ticketBoard"></div>
-
   <div class="bet-panel">
-    <button onclick="decreaseBet()">-</button>
-    <span>Bet: <span id="currentBet">2</span> Birr</span>
-    <button onclick="increaseBet()">+</button>
-    <button onclick="placeBet()">Place Bet</button>
+    <button onclick="changeBet(-1)">-</button>
+    <input type="number" id="betAmount" class="bet-amount" value="2" min="2" max="1000" readonly>
+    <button onclick="changeBet(1)">+</button>
+    <button class="button" onclick="placeBet()">Bet</button>
   </div>
-
-  <div class="draw-board" id="drawBoard"></div>
+  <div class="tickets-container" id="ticketsContainer"></div>
+  <div class="pop-numbers" id="popNumbers"></div>
 </div>
 
 <script>
 let user=JSON.parse(localStorage.getItem("user")||"null");
 let balance=Number(localStorage.getItem("balance")||0);
-const googleScriptURL="https://script.google.com/macros/s/AKfycbxf_AZ6uJO5BuW9y0M9EuUjF1ZKphqcLG6SeE5DtOORxusuMosjbEvqUiv7tsd4JVfAdA/exec";
+let playerId=user?user.id:"GUEST";
+const balancePanel=document.getElementById("balancePanel");
+balancePanel.innerText=`ID: ${playerId} | Balance: ${balance} Birr`;
 
-document.getElementById("balancePanel").innerText=user?`Balance: ${balance} Birr`:"";
-
-let selectedNumbers=new Set();
-let currentBet=2;
-const minBet=2,maxNumbers=10;
-let ticketCount=0;
 const kenoTable=document.getElementById("kenoTable");
-const drawBoard=document.getElementById("drawBoard");
-const ticketBoard=document.getElementById("ticketBoard");
-const roundTimer=document.getElementById("roundTimer");
+const ticketsContainer=document.getElementById("ticketsContainer");
+const popNumbers=document.getElementById("popNumbers");
+let selectedNumbers=[];
+let tickets=[];
+let betAmount=2;
+const maxNumbers=10;
+const drawInterval=60000; // 60s
+const reviewTime=5000; // 5s
 
-/* Create 80-number table */
+// Build 80-number table
 for(let i=1;i<=80;i++){
-  const num=document.createElement("div");
-  num.className="keno-number";
-  const span=document.createElement("span");
-  span.innerText=i;
-  num.appendChild(span);
-  num.onclick=()=>selectNumber(i,num);
-  kenoTable.appendChild(num);
+  const cell=document.createElement("div");
+  cell.className="keno-cell";
+  cell.innerText=i;
+  cell.addEventListener("click",()=>selectNumber(cell,i));
+  kenoTable.appendChild(cell);
 }
 
-function selectNumber(number,elem){
-  if(selectedNumbers.has(number)){
-    selectedNumbers.delete(number);
-    elem.classList.remove("selected");
-  } else{
-    if(selectedNumbers.size>=maxNumbers)return;
-    selectedNumbers.add(number);
-    elem.classList.add("selected");
+// Select number
+function selectNumber(cell,num){
+  if(selectedNumbers.includes(num)){
+    selectedNumbers=selectedNumbers.filter(n=>n!==num);
+    cell.classList.remove("selected");
+  } else {
+    if(selectedNumbers.length<maxNumbers){
+      selectedNumbers.push(num);
+      cell.classList.add("selected");
+    }
   }
-  updatePotentialWin();
+  calculatePotential();
 }
 
-function increaseBet(){currentBet+=2;document.getElementById("currentBet").innerText=currentBet;}
-function decreaseBet(){if(currentBet>minBet) currentBet-=2;document.getElementById("currentBet").innerText=currentBet;}
-
-function updatePotentialWin(){
-  const potential=selectedNumbers.size>0?currentBet*selectedNumbers.size:0;
-  document.getElementById("currentBet").innerText=`${currentBet} (Potential Win: ${potential} Birr)`;
+// Calculate potential win
+function calculatePotential(){
+  // Simple example: 2 birr per number matched
+  const potential=document.getElementById("betAmount").value * selectedNumbers.length;
+  // Display potential somewhere (optional)
 }
 
+// Change bet
+function changeBet(delta){
+  betAmount+=delta;
+  if(betAmount<2) betAmount=2;
+  document.getElementById("betAmount").value=betAmount;
+}
+
+// Place bet
 function placeBet(){
-  if(!user)return alert("Login first");
-  if(selectedNumbers.size===0)return alert("Select numbers first");
-  if(balance<currentBet)return alert("Insufficient balance");
-  balance-=currentBet;
+  if(selectedNumbers.length<2) return alert("Select at least 2 numbers");
+  if(balance<betAmount) return alert("Insufficient balance");
+  balance-=betAmount;
   localStorage.setItem("balance",balance);
-  document.getElementById("balancePanel").innerText=`Balance: ${balance} Birr`;
+  balancePanel.innerText=`ID: ${playerId} | Balance: ${balance} Birr`;
 
-  ticketCount++;
-  const ticket=document.createElement("div");
-  ticket.className="ticket";
-  ticket.innerText=`Ticket #${ticketCount}: [${[...selectedNumbers].join(", ")}] Bet: ${currentBet} Birr`;
-  ticketBoard.appendChild(ticket);
-  ticketBoard.scrollLeft=ticketBoard.scrollWidth; // scroll to latest
-
-  sendGoogleScript({action:"bet",playerId:user.id,numbers:[...selectedNumbers],amount:currentBet,ticket:ticketCount});
-
-  selectedNumbers.clear();
-  Array.from(kenoTable.children).forEach(e=>e.classList.remove("selected"));
-  updatePotentialWin();
+  const ticket={numbers:[...selectedNumbers],bet:betAmount,id:Date.now()};
+  tickets.push(ticket);
+  renderTickets();
+  selectedNumbers=[];
+  document.querySelectorAll(".keno-cell.selected").forEach(c=>c.classList.remove("selected"));
 }
 
-/* Timer and draw */
-let roundTime=60;
-function startRoundTimer(){
-  roundTimer.innerText=`Next draw in: ${roundTime}s`;
-  const interval=setInterval(()=>{
-    roundTime--;
-    if(roundTime<=0){
-      clearInterval(interval);
-      runDraw();
-    }
-    roundTimer.innerText=`Next draw in: ${roundTime}s`;
-  },1000);
+// Render tickets
+function renderTickets(){
+  ticketsContainer.innerHTML="";
+  tickets.forEach(t=>{
+    const div=document.createElement("div");
+    div.className="ticket";
+    div.innerText=`Ticket ${t.id}\nNumbers: ${t.numbers.join(", ")}\nBet: ${t.bet} Birr`;
+    ticketsContainer.appendChild(div);
+  });
 }
-startRoundTimer();
 
-function runDraw(){
-  drawBoard.innerHTML="";
-  const drawNumbers=[];
-  while(drawNumbers.length<20){
-    let n=Math.floor(Math.random()*80)+1;
-    if(!drawNumbers.includes(n))drawNumbers.push(n);
+// Draw numbers
+function drawNumbers(){
+  const drawn=[];
+  while(drawn.length<20){
+    const n=Math.floor(Math.random()*80)+1;
+    if(!drawn.includes(n)) drawn.push(n);
   }
-
-  drawNumbers.forEach((n,i)=>{
-    setTimeout(()=>{
-      const numElem=document.createElement("div");
-      numElem.innerText=n;
-      drawBoard.appendChild(numElem);
-      markWinningNumbers(n);
-    },i*1000);
-  });
-
-  setTimeout(()=>{alert("Draw complete!");roundTime=60;startRoundTimer();},drawNumbers.length*1000+5000);
+  popNumbers.innerHTML="";
+  let i=0;
+  const interval=setInterval(()=>{
+    if(i>=drawn.length){
+      clearInterval(interval);
+      reviewDraw(drawn);
+      return;
+    }
+    const span=document.createElement("span");
+    span.innerText=drawn[i];
+    popNumbers.appendChild(span);
+    markWinning(drawn[i]);
+    i++;
+  },300);
 }
 
-function markWinningNumbers(number){
-  Array.from(ticketBoard.children).forEach(ticket=>{
-    if(ticket.innerText.includes(number)){
-      ticket.style.background="#228822";
+// Mark winning numbers on table and tickets
+function markWinning(num){
+  document.querySelectorAll(".keno-cell").forEach(c=>{
+    if(Number(c.innerText)===num) c.classList.add("winner");
+  });
+  tickets.forEach(t=>{
+    if(t.numbers.includes(num)){
+      // Highlight ticket (optional)
     }
   });
 }
 
-function sendGoogleScript(data){
-  fetch(googleScriptURL,{
-    method:"POST",
-    body:JSON.stringify(data),
-    headers:{"Content-Type":"application/json"}
-  }).then(r=>r.json()).then(console.log).catch(console.error);
+// Review before next draw
+function reviewDraw(drawn){
+  // Calculate ticket wins
+  tickets.forEach(t=>{
+    let matchCount=t.numbers.filter(n=>drawn.includes(n)).length;
+    let winAmount=matchCount * t.bet; // simple
+    balance+=winAmount;
+  });
+  tickets=[];
+  localStorage.setItem("balance",balance);
+  balancePanel.innerText=`ID: ${playerId} | Balance: ${balance} Birr`;
+  // Reset table
+  document.querySelectorAll(".keno-cell").forEach(c=>c.classList.remove("winner"));
+  setTimeout(()=>drawNumbers(),reviewTime);
 }
-</script>
 
+// Start first draw after 5s
+setTimeout(()=>drawNumbers(),reviewTime);
+</script>
 </body>
 </html>
